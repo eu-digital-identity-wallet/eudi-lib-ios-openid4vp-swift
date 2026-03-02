@@ -403,7 +403,10 @@ internal extension OpenId4VPConfiguration {
       }
     }
     
-    guard let algorithm = jws.header.algorithm else {
+    guard
+      let algorithm = jws.header.algorithm,
+      algorithm.rawValue != "none"
+    else {
       throw ValidationError.validationError("algorithm should not be nil")
     }
     
