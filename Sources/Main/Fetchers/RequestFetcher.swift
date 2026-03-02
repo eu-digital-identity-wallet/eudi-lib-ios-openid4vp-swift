@@ -104,6 +104,7 @@ internal actor RequestFetcher {
     let expectedWalletAudience: String? = OpenId4VPConfiguration.SelfIssued?.absoluteString
     try config?.ensureJWTValid(
       expectedClient: clientId,
+      nonceOption: .doNotUse,
       expectedWalletNonce: nil,
       expectedWalletAudience: expectedWalletAudience,
       jwt: jwt
@@ -170,8 +171,10 @@ internal actor RequestFetcher {
     let expectedWalletAudience: String? = walletMetadata != nil
       ? config?.issuer?.absoluteString
       : OpenId4VPConfiguration.SelfIssued?.absoluteString
+    let nonceOption = config?.jarConfiguration.nonceOption
     try config?.ensureJWTValid(
       expectedClient: clientId,
+      nonceOption: nonceOption,
       expectedWalletNonce: nonce,
       expectedWalletAudience: expectedWalletAudience,
       jwt: finalJwt
@@ -346,6 +349,7 @@ internal extension OpenId4VPConfiguration {
   
   func ensureJWTValid(
     expectedClient: String?,
+    nonceOption: NonceOption?,
     expectedWalletNonce: String?,
     expectedWalletAudience: String?,
     jwt: JWTString
@@ -353,6 +357,25 @@ internal extension OpenId4VPConfiguration {
     
     let jws = try JWS(compactSerialization: jwt)
     
+    switch nonceOption {
+    case .use:
+      guard let expectedWalletNonce = expectedWalletNonce else {
+        throw ValidationError.validationError("expected wallet_nonce is missing")
+      }
+
+      guard let jwsNonce = getValueForKey(
+        from: jwt,
+        key: Constants.WALLET_NONCE_FORM_PARAM
+      ) as? String else {
+        throw ValidationError.validationError("wallet_nonce missing in JWT")
+      }
+
+      guard jwsNonce == expectedWalletNonce else {
+        throw ValidationError.validationError("wallet_nonce mismatch")
+      }
+    default:
+      break
+    }
     guard let expectedClient = expectedClient else {
       throw ValidationError.validationError("expectedClient should not be nil")
     }
@@ -362,16 +385,6 @@ internal extension OpenId4VPConfiguration {
       key: "client_id"
     ) as? String else {
       throw ValidationError.validationError("client_id should not be nil")
-    }
-    
-    guard
-      let aud = getValueForKey(
-        from: jwt,
-        key: AUD
-      ) as? String,
-      aud == expectedWalletAudience
-    else {
-      throw ValidationError.validationError("Invalid aud value, should be: \(expectedWalletAudience ?? "")")
     }
     
     let id = try? VerifierId.parse(clientId: jwsClientID).get()

@@ -60,4 +60,15 @@ public struct JARConfiguration: Sendable {
       }
     }
   }
+  
+  public var nonceOption: NonceOption {
+    switch supportedRequestUriMethods {
+    case .get:
+      return .doNotUse
+    case .post(let options):
+      return options.useWalletNonce
+    case .both(let options):
+      return options.useWalletNonce
+    }
+  }
 }
