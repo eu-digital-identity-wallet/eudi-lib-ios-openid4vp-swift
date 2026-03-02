@@ -22,7 +22,7 @@ public enum NonceOption: Sendable {
   public init(byteLength: Int = 32) throws {
     // Use the `.use` case by default with validation
     guard byteLength > 1 else {
-      throw NonceError.invalidLength
+      throw NonceError.invalidLength(minimum: 32)
     }
     self = .use(byteLength: byteLength)
   }

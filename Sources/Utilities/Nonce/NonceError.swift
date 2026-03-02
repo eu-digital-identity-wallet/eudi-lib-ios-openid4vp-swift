@@ -16,13 +16,12 @@
 import Foundation
 
 /// An error type representing possible failures when generating a nonce.
-///
-/// - `invalidLength`: Indicates that the provided length is invalid.
-///   This occurs when the specified length is less than or equal to zero.
-public enum NonceError: Error {
+public enum NonceError: Error, Equatable {
   /// Indicates that the provided length for generating a nonce is invalid.
   ///
   /// This error occurs when the length specified is less than or equal to zero.
   /// The nonce generator requires a strictly positive integer value for its length.
-  case invalidLength
+  case invalidLength(minimum: Int)
+  case invalidByteLength(minimum: Int)
+  case randomGenerationFailed(OSStatus)
 }
