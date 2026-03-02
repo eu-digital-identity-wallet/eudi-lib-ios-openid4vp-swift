@@ -27,7 +27,7 @@ final class DirectPostTests: DiXCTest {
     
     let validator = ClientMetaDataValidator()
     let metaData = try await validator.validate(
-      clientMetaData: Constants.testClientMetaData(),
+      clientMetaData: TestsConstants.testClientMetaData(),
       responseMode: nil,
       responseEncryptionConfiguration: .unsupported
     )
@@ -45,7 +45,7 @@ final class DirectPostTests: DiXCTest {
           ])
         ),
         clientMetaData: metaData,
-        client: Constants.testClient,
+        client: TestsConstants.testClient,
         nonce: TestsConstants.testNonce,
         responseMode: TestsConstants.testResponseMode,
         state: TestsConstants.generateRandomBase64String(),
@@ -71,7 +71,7 @@ final class DirectPostTests: DiXCTest {
     
     let validator = ClientMetaDataValidator()
     let metaData = try await validator.validate(
-      clientMetaData: Constants.testClientMetaData(),
+      clientMetaData: TestsConstants.testClientMetaData(),
       responseMode: nil,
       responseEncryptionConfiguration: .unsupported
     )
@@ -89,7 +89,7 @@ final class DirectPostTests: DiXCTest {
           ])
         ),
         clientMetaData: metaData,
-        client: Constants.testClient,
+        client: TestsConstants.testClient,
         nonce: TestsConstants.testNonce,
         responseMode: TestsConstants.testResponseMode,
         state: TestsConstants.generateRandomBase64String(),

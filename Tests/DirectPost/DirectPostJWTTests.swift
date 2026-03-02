@@ -196,7 +196,7 @@ final class DirectPostJWTTests: DiXCTest {
     
     let validator = ClientMetaDataValidator()
     let metaData = try await validator.validate(
-      clientMetaData: Constants.testClientMetaData(),
+      clientMetaData: TestsConstants.testClientMetaData(),
       responseMode: nil,
       responseEncryptionConfiguration: .unsupported
     )
@@ -214,10 +214,10 @@ final class DirectPostJWTTests: DiXCTest {
           ])
         ),
         clientMetaData: metaData,
-        client: Constants.testClient,
-        nonce: Constants.testNonce,
-        responseMode: Constants.testDirectPostJwtResponseMode,
-        state: Constants.generateRandomBase64String(),
+        client: TestsConstants.testClient,
+        nonce: TestsConstants.testNonce,
+        responseMode: TestsConstants.testDirectPostJwtResponseMode,
+        state: TestsConstants.generateRandomBase64String(),
         vpFormatsSupported: try .default(),
         responseEncryptionSpecification: nil
       )
