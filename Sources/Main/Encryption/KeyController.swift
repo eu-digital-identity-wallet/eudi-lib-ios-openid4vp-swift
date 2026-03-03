@@ -17,6 +17,14 @@ import Foundation
 import Security
 import JOSESwift
 
+public enum KeyControllerError: Error {
+  case containsPrivateKeyMaterial
+  case unsupportedPEMFormat
+  case invalidBase64
+  case secKeyCreationFailed
+  case notRSAPublicKey
+}
+
 public class KeyController {
 
   public static func generateRSAPrivateKey() throws -> SecKey {
@@ -77,32 +85,71 @@ public class KeyController {
 
   public static func convertRSAPEMToPublicKey(_ pem: String) throws -> SecKey? {
 
-    let key = pem
-      .replacingOccurrences(of: "-----BEGIN PUBLIC KEY-----", with: "")
-      .replacingOccurrences(of: "-----END PUBLIC KEY-----", with: "")
-      .split(separator: "\n").joined()
+    // 1) Fail closed if PEM contains any private key blocks
+    // (covers PKCS#1, PKCS#8, encrypted PKCS#8, EC, etc.)
+    let upper = pem.uppercased()
+    if upper.contains("BEGIN PRIVATE KEY") ||
+       upper.contains("BEGIN RSA PRIVATE KEY") ||
+       upper.contains("BEGIN ENCRYPTED PRIVATE KEY") ||
+       upper.contains("BEGIN EC PRIVATE KEY") {
+      throw KeyControllerError.containsPrivateKeyMaterial
+    }
 
-    // Define the key attributes
+    // 2) Accept only known public-key PEM labels
+    // - "PUBLIC KEY" (SubjectPublicKeyInfo / SPKI) is the standard
+    // - "RSA PUBLIC KEY" (PKCS#1 public key) exists in the wild
+    let isSPKI = upper.contains("BEGIN PUBLIC KEY") && upper.contains("END PUBLIC KEY")
+    let isRSAPublic = upper.contains("BEGIN RSA PUBLIC KEY") && upper.contains("END RSA PUBLIC KEY")
+
+    guard isSPKI || isRSAPublic else {
+      throw KeyControllerError.unsupportedPEMFormat
+    }
+
+    // 3) Extract ONLY the base64 inside the public key block we support
+    let keyBody: String
+    if isSPKI {
+      keyBody = pem
+        .replacingOccurrences(of: "-----BEGIN PUBLIC KEY-----", with: "")
+        .replacingOccurrences(of: "-----END PUBLIC KEY-----", with: "")
+    } else {
+      keyBody = pem
+        .replacingOccurrences(of: "-----BEGIN RSA PUBLIC KEY-----", with: "")
+        .replacingOccurrences(of: "-----END RSA PUBLIC KEY-----", with: "")
+    }
+
+    // Remove whitespace/newlines
+    let b64 = keyBody
+      .components(separatedBy: .whitespacesAndNewlines)
+      .joined()
+
+    // 4) Strict base64 decode (no ignoreUnknownCharacters)
+    guard let keyData = Data(base64Encoded: b64) else {
+      throw KeyControllerError.invalidBase64
+    }
+
+    // 5) Create SecKey with strict attributes (RSA + public)
     let attributes: [CFString: Any] = [
       kSecAttrKeyType: kSecAttrKeyTypeRSA,
       kSecAttrKeyClass: kSecAttrKeyClassPublic
     ]
 
-    guard let privateKeyData = Data(
-      base64Encoded: key,
-      options: .ignoreUnknownCharacters
-    ) else {
-      return nil
+    var error: Unmanaged<CFError>?
+    guard let secKey = SecKeyCreateWithData(keyData as CFData, attributes as CFDictionary, &error) else {
+      // Don’t print; surface a controlled error
+      throw KeyControllerError.secKeyCreationFailed
     }
 
-    // Create the SecKey object
-    var error: Unmanaged<CFError>?
-    guard let secKey = SecKeyCreateWithData(privateKeyData as CFData, attributes as CFDictionary, &error) else {
-      if let error = error?.takeRetainedValue() {
-        print("Failed to create SecKey:", error)
-      }
-      return nil
+    // 6) Verify it really is an RSA public key
+    guard
+      let attrs = SecKeyCopyAttributes(secKey) as? [CFString: Any],
+      let keyType = attrs[kSecAttrKeyType] as? String,
+      let keyClass = attrs[kSecAttrKeyClass] as? String,
+      keyType == (kSecAttrKeyTypeRSA as String),
+      keyClass == (kSecAttrKeyClassPublic as String)
+    else {
+      throw KeyControllerError.notRSAPublicKey
     }
+
     return secKey
   }
 }
