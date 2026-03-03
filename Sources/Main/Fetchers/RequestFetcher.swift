@@ -393,14 +393,13 @@ internal extension OpenId4VPConfiguration {
       throw ValidationError.validationError("client_id's do not match")
     }
     
-    if expectedWalletNonce != nil, let jwsNonce = getValueForKey(
-      from: jwt,
-      key: Constants.WALLET_NONCE_FORM_PARAM
-    ) as? String {
-      
-      guard jwsNonce == expectedWalletNonce else {
-        throw ValidationError.validationError("nonce's do not match")
-      }
+    guard let aud = getValueForKey(
+        from: jwt,
+        key: AUD
+      ) as? String,
+      aud == expectedWalletAudience
+    else {
+      throw ValidationError.validationError("Invalid aud value, should be: \(expectedWalletAudience ?? "")")
     }
     
     guard
