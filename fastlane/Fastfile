@@ -19,7 +19,7 @@ platform :ios do
     params = {
       package_path: '.',
       scheme: 'OpenID4VP',
-      devices: ['iPhone 16'], 
+      destination: "platform=iOS Simulator,name=iPhone 16,OS=18.5",
       output_directory: "xcov_output",
       result_bundle: true
     }
@@ -41,12 +41,12 @@ platform :ios do
     end
   end
 
-  desc "Runs unit tests"
+  desc "Run unit tests"
   lane :tests do
     params = {
       package_path: '.',
       scheme: 'OpenID4VP',
-      devices: ['iPhone 16'], 
+      destination: "platform=iOS Simulator,name=iPhone 16,OS=18.5",
       result_bundle: true
     }
 

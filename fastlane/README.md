@@ -37,7 +37,7 @@ Code coverage
 [bundle exec] fastlane ios tests
 ```
 
-Runs unit tests
+Run unit tests
 
 ### ios just_build
 

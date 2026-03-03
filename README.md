@@ -81,9 +81,9 @@ You can use this library to simplify the integration of OIDC4VP into your mobile
 
 ## Usage
 
-Entry point to the library is the class [OpenId4Vp](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-siop-openid4vp-swift/blob/main/Sources/SiopOpenID4VP/OpenID4VP.swift).
+Entry point to the library is the class [OpenId4Vp](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-openid4vp-swift/blob/main/Sources/SiopOpenID4VP/OpenID4VP.swift).
 
-You can add the library to your project using Swift Package Manager. [Releases](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-siop-openid4vp-swift/releases)
+You can add the library to your project using Swift Package Manager. [Releases](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-openid4vp-swift/releases)
 
 ```swift
 import OpenID4VP
@@ -109,7 +109,7 @@ requests mentioned aforementioned) and in addition gather from Verifier addition
 reference.
 
 The object that captures the aforementioned functionality is 
-[ResolvedRequestData](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-siop-openid4vp-swift/blob/main/Sources/Entities/Resolved/ResolvedRequestData.swift)
+[ResolvedRequestData](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-openid4vp-swift/blob/main/Sources/Entities/Resolved/ResolvedRequestData.swift)
 
 
 `async/await` version:
@@ -139,12 +139,12 @@ This functionality is a wallet concern and it is not supported directly by the l
 
 ### Build an authorization response
 
-After collecting holder's consensus, wallet can use the library to form an appropriate response [AuthorizationResponse](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-siop-openid4vp-swift/blob/main/Sources/Entities/AuthorisationRequest/AuthorizationResponse.swift).
+After collecting holder's consensus, wallet can use the library to form an appropriate response [AuthorizationResponse](https://github.com/eu-digital-identity-wallet/eudi-lib-ios-openid4vp-swift/blob/main/Sources/Entities/AuthorisationRequest/AuthorizationResponse.swift).
 
 ```swift
 import OpenID4VP
 
-let resolved: ResolvedSiopOpenId4VPRequestData = ...
+let resolved: ResolvedRequestData = ...
 let jwt: JWTString = ... // provided by wallet
 let consent: ClientConsent = .vpToken(...)
 let response = try AuthorizationResponse(
