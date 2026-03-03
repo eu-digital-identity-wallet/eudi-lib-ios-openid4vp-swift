@@ -108,8 +108,8 @@ public actor AuthorisationService: AuthorisationServiceType {
         return try result.get()
       }
 
-      let encryptor: ResponseSignerEncryptor = .init()
-      let joseResponse = try await encryptor.signEncryptResponse(
+      let encryptor: ResponseEncryptor = .init()
+      let joseResponse = try await encryptor.encryptResponse(
         responseEncryptionSpecification: responseEncryptionSpecification,
         data: data
       )

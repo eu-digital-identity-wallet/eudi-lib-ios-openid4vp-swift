@@ -46,14 +46,14 @@ final class ResponseSignerEncryptorTests: DiXCTest {
       "keys": [publicKeyJWK.jsonString()?.convertToDictionary()]
     ])
 
-    let responseSignerEncryptor = ResponseSignerEncryptor()
+    let responseSignerEncryptor = ResponseEncryptor()
     let specification = ResponseEncryptionSpecification(
       responseEncryptionAlg: .init(.ECDH_ES),
       responseEncryptionEnc: .init(.A128GCM),
       clientKey: keySet
     )
 
-    let response = try await responseSignerEncryptor.signEncryptResponse(
+    let response = try await responseSignerEncryptor.encryptResponse(
       responseEncryptionSpecification: specification,
       data: mockResponsePayload
     )
@@ -88,14 +88,14 @@ final class ResponseSignerEncryptorTests: DiXCTest {
       "keys": [publicKeyJWK.jsonString()?.convertToDictionary()]
     ])
 
-    let responseSignerEncryptor = ResponseSignerEncryptor()
+    let responseSignerEncryptor = ResponseEncryptor()
     let responseEncryptionSpecification = ResponseEncryptionSpecification(
       responseEncryptionAlg: alg,
       responseEncryptionEnc: JOSEEncryptionMethod(.A128CBC_HS256),
       clientKey: keySet
     )
     
-    let response = try await responseSignerEncryptor.signEncryptResponse(
+    let response = try await responseSignerEncryptor.encryptResponse(
       responseEncryptionSpecification: responseEncryptionSpecification,
       data: mockResponsePayload
     )
@@ -123,14 +123,14 @@ final class ResponseSignerEncryptorTests: DiXCTest {
       "keys": [publicKeyJWK.jsonString()?.convertToDictionary()]
     ])
 
-    let responseSignerEncryptor = ResponseSignerEncryptor()
+    let responseSignerEncryptor = ResponseEncryptor()
     let responseEncryptionSpecification = ResponseEncryptionSpecification(
       responseEncryptionAlg: encryptionAlg,
       responseEncryptionEnc: JOSEEncryptionMethod(.A128GCM),
       clientKey: keySet
     )
     
-    let response = try await responseSignerEncryptor.signEncryptResponse(
+    let response = try await responseSignerEncryptor.encryptResponse(
       responseEncryptionSpecification: responseEncryptionSpecification,
       data: mockResponsePayload
     )
@@ -173,14 +173,14 @@ final class ResponseSignerEncryptorTests: DiXCTest {
       "keys": [publicJWK.jsonString()?.convertToDictionary()]
     ])
 
-    let responseSignerEncryptor = ResponseSignerEncryptor()
+    let responseSignerEncryptor = ResponseEncryptor()
     let responseEncryptionSpecification = ResponseEncryptionSpecification(
       responseEncryptionAlg: alg,
       responseEncryptionEnc: JOSEEncryptionMethod(.A128CBC_HS256),
       clientKey: keySet
     )
     
-    let response = try await responseSignerEncryptor.signEncryptResponse(
+    let response = try await responseSignerEncryptor.encryptResponse(
       responseEncryptionSpecification: responseEncryptionSpecification,
       data: mockResponsePayload
     )
@@ -227,9 +227,9 @@ final class ResponseSignerEncryptorTests: DiXCTest {
       clientKey: keySet
     )
 
-    let responseSignerEncryptor = ResponseSignerEncryptor()
+    let responseSignerEncryptor = ResponseEncryptor()
     
-    let response = try await responseSignerEncryptor.signEncryptResponse(
+    let response = try await responseSignerEncryptor.encryptResponse(
       responseEncryptionSpecification: responseEncryptionSpecification,
       data: mockResponsePayload
     )
