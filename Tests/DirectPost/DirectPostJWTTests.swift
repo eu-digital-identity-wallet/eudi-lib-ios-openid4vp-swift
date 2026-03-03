@@ -226,8 +226,8 @@ final class DirectPostJWTTests: DiXCTest {
     let jose = JOSEController()
     let kid = UUID()
     
-    let privateKey = try KeyController.generateHardcodedRSAPrivateKey()
-    let publicKey = try KeyController.generateRSAPublicKey(from: privateKey!)
+    let privateKey = try KeyController.generateRSAPrivateKey()
+    let publicKey = try KeyController.generateRSAPublicKey(from: privateKey)
     
     let rsaJWK = try RSAPublicKey(
       publicKey: publicKey,
@@ -245,7 +245,7 @@ final class DirectPostJWTTests: DiXCTest {
       resolvedRequest: resolved,
       holderInfo: holderInfo,
       walletConfiguration: .init(
-        privateKey: privateKey!,
+        privateKey: privateKey,
         publicWebKeySet: TestsConstants.webKeySet,
         supportedClientIdSchemes: [],
         vpFormatsSupported: ClaimFormat.default(),
@@ -253,7 +253,7 @@ final class DirectPostJWTTests: DiXCTest {
         responseEncryptionConfiguration: .unsupported
       ),
       rsaJWK: rsaJWK,
-      signingKey: privateKey!,
+      signingKey: privateKey,
       kid: kid
     )
     
@@ -1047,8 +1047,8 @@ final class DirectPostJWTTests: DiXCTest {
       privateKey: ecPrivateKey
     )
     
-    let rsaPrivateKey = try KeyController.generateHardcodedRSAPrivateKey()
-    let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey!)
+    let rsaPrivateKey = try KeyController.generateRSAPrivateKey()
+    let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey)
     
     let rsaJWK = try RSAPublicKey(
       publicKey: rsaPublicKey,
@@ -1127,7 +1127,7 @@ final class DirectPostJWTTests: DiXCTest {
       resolvedRequest: resolved,
       consent: consent,
       walletOpenId4VPConfig: .init(
-        privateKey: rsaPrivateKey!,
+        privateKey: rsaPrivateKey,
         publicWebKeySet: rsaKeySet,
         supportedClientIdSchemes: [],
         vpFormatsSupported: ClaimFormat.default(),

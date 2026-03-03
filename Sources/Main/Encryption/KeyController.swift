@@ -15,40 +15,9 @@
  */
 import Foundation
 import Security
-import CryptorECC
 import JOSESwift
 
 public class KeyController {
-
-  public static func generateHardcodedRSAPrivateKey() throws -> SecKey? {
-
-    // Convert DER key to Data
-    guard
-      let contents = String.loadStringFileFromBundle(
-        named: "sample_derfile",
-        withExtension: "der"
-      )?.replacingOccurrences(of: "\n", with: ""),
-      let data = Data(base64Encoded: contents)
-    else {
-      return nil
-    }
-
-    // Define the key attributes
-    let attributes: [CFString: Any] = [
-      kSecAttrKeyType: kSecAttrKeyTypeRSA,
-      kSecAttrKeyClass: kSecAttrKeyClassPrivate
-    ]
-
-    // Create the SecKey object
-    var error: Unmanaged<CFError>?
-    guard let secKey = SecKeyCreateWithData(data as CFData, attributes as CFDictionary, &error) else {
-      if let error = error?.takeRetainedValue() {
-        print("Failed to create SecKey:", error)
-      }
-      return nil
-    }
-    return secKey
-  }
 
   public static func generateRSAPrivateKey() throws -> SecKey {
     let attributes: [String: Any] = [
@@ -90,25 +59,6 @@ public class KeyController {
     return publicKey
   }
 
-  public static func convertRSAPrivateKeyToPEM(key: SecKey) throws -> String {
-
-    // Convert to DER first
-    var error: Unmanaged<CFError>?
-    guard let derData = SecKeyCopyExternalRepresentation(key, &error) as Data? else {
-      throw error?.takeRetainedValue() as Error? ?? NSError(domain: "SecKeyError", code: -1, userInfo: nil)
-    }
-
-    let base64Encoded = derData.base64EncodedString()
-    var pemString = "-----BEGIN RSA PRIVATE KEY-----\n"
-    pemString += base64Encoded.chunked(length: 64)
-      .joined(separator: "\n")
-      .replacingOccurrences(of: "/", with: "_")
-      .replacingOccurrences(of: "+", with: "-")
-      .replacingOccurrences(of: "=", with: "")
-    pemString += "\n-----END RSA PRIVATE KEY-----\n"
-    return pemString
-  }
-
   public static func convertPEMToPublicKey(
     _ pem: String,
     algorithm: SignatureAlgorithm = .RS256
@@ -117,7 +67,7 @@ public class KeyController {
     case .RS256, .RS384, .RS512:
       return try? Self.convertRSAPEMToPublicKey(pem)
     case .ES256, .ES384, .ES512:
-      return try? ECPublicKey(key: pem).nativeKey
+      return try? ECPublicKeyConverter.secKey(fromPEM: pem)
     case .HS256, .HS384, .HS512:
       return nil
     case .PS256, .PS384, .PS512:

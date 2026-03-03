@@ -97,15 +97,6 @@ class ExtensionTests: XCTestCase {
 
     XCTAssertEqual(testString.base64urlEncode, expectedBase64URLEncoded)
   }
-
-  func testLoadStringFileFromBundle() {
-    if let string = String.loadStringFileFromBundle(named: "sample_derfile", withExtension: "der") {
-        // Assert
-      XCTAssert(!string.isEmpty)
-    } else {
-        XCTFail("Failed to load string file.")
-    }
-  }
 }
 
 class URLHostTests: XCTestCase {
