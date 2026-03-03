@@ -76,7 +76,7 @@ public struct VerifierId: Sendable {
 
         switch scheme {
         case .preRegistered:
-          throw invalid("'\(ClientIdPrefix.preRegistered)' cannot be used as a Client ID Scheme")
+          return VerifierId(scheme: .preRegistered, originalClientId: clientId)
         case .redirectUri, .x509SanDns, .x509Hash, .verifierAttestation:
           return VerifierId(scheme: scheme, originalClientId: originalClientId)
         case .openidFederation, .decentralizedIdentifier:

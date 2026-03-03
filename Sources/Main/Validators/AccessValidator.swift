@@ -49,6 +49,14 @@ public actor AccessValidator: AccessValidating {
     }
 
     guard
+      let requestObject = JWTDecoder.decodeJWT(jws.compactSerializedString),
+      let jwsClientId = requestObject.clientId,
+      jwsClientId == clientId
+    else {
+      throw ValidationError.invalidClientId
+    }
+    
+    guard
       let clientIdScheme = try? VerifierId.parse(clientId: clientId).get().scheme
     else {
       throw ValidationError.unsupportedClientIdScheme(nil)

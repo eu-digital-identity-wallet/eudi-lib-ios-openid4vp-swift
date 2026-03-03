@@ -82,7 +82,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
 
     let clientId = "Verifier"
     let scheme = "pre-registered"
-
+    
     let jws = try JWS(
       header: .init(parameters: [
         "alg": algorithm.rawValue,
@@ -99,7 +99,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
 
     do {
       try await validator.validate(
-        clientId: clientId,
+        clientId: "\(scheme):\(clientId)",
         jwt: jws.compactSerializedString
       )
     } catch {
@@ -120,8 +120,8 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
     let algorithm = SignatureAlgorithm(rawValue: walletConfig.publicWebKeySet.keys.first!.alg!)!
 
     let clientId = "Verifier"
-    let scheme = "decentralized_identifier"
-
+    let scheme = "pre-registered"
+    
     let jws = try JWS(
       header: .init(parameters: [
         "alg": algorithm.rawValue,
@@ -137,7 +137,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
     )
 
     try await validator.validate(
-      clientId: clientId,
+      clientId: "\(scheme):\(clientId)",
       jwt: jws.compactSerializedString
     )
 
