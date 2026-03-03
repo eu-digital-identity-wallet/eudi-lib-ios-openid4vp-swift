@@ -81,14 +81,15 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
     let algorithm = SignatureAlgorithm(rawValue: walletConfig.publicWebKeySet.keys.first!.alg!)!
 
     let clientId = "Verifier"
-
+    let scheme = "pre-registered"
+    
     let jws = try JWS(
       header: .init(parameters: [
         "alg": algorithm.rawValue,
         "typ": "oauth-authz-req+jwt"
       ]),
       payload: try Payload([
-        "client_id": "\(clientId)"
+        "client_id": "\(scheme):\(clientId)"
       ].toThrowingJSONData()),
       signer: Signer(
         signatureAlgorithm: algorithm,
@@ -98,7 +99,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
 
     do {
       try await validator.validate(
-        clientId: clientId,
+        clientId: "\(scheme):\(clientId)",
         jwt: jws.compactSerializedString
       )
     } catch {
@@ -119,14 +120,15 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
     let algorithm = SignatureAlgorithm(rawValue: walletConfig.publicWebKeySet.keys.first!.alg!)!
 
     let clientId = "Verifier"
-
+    let scheme = "pre-registered"
+    
     let jws = try JWS(
       header: .init(parameters: [
         "alg": algorithm.rawValue,
         "typ": "oauth-authz-req+jwt"
       ]),
       payload: try Payload([
-        "client_id": "\(clientId)"
+        "client_id": "\(scheme):\(clientId)"
       ].toThrowingJSONData()),
       signer: Signer(
         signatureAlgorithm: algorithm,
@@ -135,7 +137,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
     )
 
     try await validator.validate(
-      clientId: clientId,
+      clientId: "\(scheme):\(clientId)",
       jwt: jws.compactSerializedString
     )
 
