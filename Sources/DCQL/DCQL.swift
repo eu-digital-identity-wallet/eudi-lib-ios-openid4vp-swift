@@ -175,6 +175,11 @@ public struct ClaimId: Codable, Hashable, Sendable {
   public static func ensureValid(_ value: String) throws {
     try DCQLId.ensureValid(value)
   }
+    
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(id)
+  }
   
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()

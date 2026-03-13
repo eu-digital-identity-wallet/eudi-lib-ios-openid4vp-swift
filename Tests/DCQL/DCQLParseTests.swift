@@ -987,4 +987,40 @@ final class DCQLParseTests: XCTestCase {
     
     XCTAssert(primary == secondary)
   }
+  
+  func testDcqlEncoding() throws {
+    let dcqlString = """
+    {
+      "credentials": [
+        {
+          "id": "eu_europa_ec_eudi_pid_1",
+          "format": "mso_mdoc",
+          "meta": {
+            "doctype_value": "eu.europa.ec.eudi.pid.1"
+          },
+          "claims": [
+            {
+              "id": "family_name",
+              "path": ["eu.europa.ec.eudi.pid.1", "family_name"]
+            }
+          ]
+        }
+      ]
+    }
+    """
+    
+    let data = dcqlString.data(using: .utf8)!
+    let originalJson = try! JSON(data: data)
+
+    do {
+      let dcql = try DCQL(from: originalJson)
+      let encodedData = try JSONEncoder().encode(dcql)
+      let encodedJson = try JSON(data: encodedData)
+      print(encodedJson)
+      XCTAssert(encodedJson == originalJson)
+    } catch {
+      print(error)
+      XCTAssert(false)
+    }
+  }
 }
