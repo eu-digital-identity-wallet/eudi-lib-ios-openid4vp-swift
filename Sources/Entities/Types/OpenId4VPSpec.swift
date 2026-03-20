@@ -15,6 +15,7 @@
  */
 public struct OpenId4VPSpec {
   public static let clientIdSchemeSeparator: Character = ":"
+  public static let clientIdSchemeDIDWithSeparator = "did:"
   public static let clientIdSchemePreRegistered = "pre-registered"
   public static let clientIdSchemeRedirectUri = "redirect_uri"
   public static let clientIdSchemeHttps = "https"

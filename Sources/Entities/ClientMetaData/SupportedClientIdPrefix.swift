@@ -63,7 +63,7 @@ public enum SupportedClientIdPrefix: @unchecked Sendable {
   case preregistered(clients: [OriginalClientId: PreregisteredClient])
   case x509SanDns(trust: CertificateTrust)
   case x509Hash(trust: CertificateTrust)
-  case decentralizedIdentifier(lookup: DIDPublicKeyLookupAgentType)
+  case decentralizedIdentifier(did: DID, lookup: DIDPublicKeyLookupAgentType)
   case verifierAttestation(
     trust: Verifier,
     clockSkew: TimeInterval = 15.0

@@ -34,6 +34,8 @@ public struct VerifierId: Sendable {
         return OpenId4VPSpec.clientIdSchemeX509SanDns
       case .verifierAttestation:
         return OpenId4VPSpec.clientIdSchemeVerifierAttestation
+      case.decentralizedIdentifier:
+        return OpenId4VPSpec.clientIdSchemeDid
       default:
         return nil
       }
@@ -59,7 +61,10 @@ public struct VerifierId: Sendable {
         return ValidationError.validationError(message)
       }
 
-      if !clientId.contains(OpenId4VPSpec.clientIdSchemeSeparator) {
+      if clientId.contains(OpenId4VPSpec.clientIdSchemeDIDWithSeparator) {
+        return VerifierId(scheme: .preRegistered, originalClientId: clientId)
+
+      } else if !clientId.contains(OpenId4VPSpec.clientIdSchemeSeparator) {
         return VerifierId(scheme: .preRegistered, originalClientId: clientId)
 
       } else {

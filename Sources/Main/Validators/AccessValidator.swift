@@ -69,6 +69,7 @@ public actor AccessValidator: AccessValidating {
       return switch $0 {
       case .preregistered: true
       case .redirectUri: true
+      case .decentralizedIdentifier: true
       default: false
       }
     })
@@ -95,6 +96,7 @@ public actor AccessValidator: AccessValidating {
         }
       )
     case .redirectUri: break
+    case .decentralizedIdentifier: break
     default: throw ValidationError.unsupportedClientIdScheme(nil)
     }
   }
