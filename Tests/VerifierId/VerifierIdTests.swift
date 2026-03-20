@@ -69,13 +69,14 @@ final class VerifierIdTests: XCTestCase {
 
   // Test valid HTTPS scheme
   func testParseValidHttpsClientId() {
-    let clientId = "\(OpenId4VPSpec.clientIdSchemeOpenidFederation):exampleClientId"
+    let originalClientId = "exampleClientId"
+    let clientId = "\(OpenId4VPSpec.clientIdSchemeOpenidFederation):\(originalClientId)"
     let result = VerifierId.parse(clientId: clientId)
 
     switch result {
     case .success(let verifierId):
       XCTAssertEqual(verifierId.scheme, .openidFederation)
-      XCTAssertEqual(verifierId.originalClientId, clientId)
+      XCTAssertEqual(verifierId.originalClientId, originalClientId)
       XCTAssertEqual(verifierId.clientId, clientId)
     case .failure:
       XCTFail("Parsing failed for valid HTTPS client ID")
@@ -84,13 +85,14 @@ final class VerifierIdTests: XCTestCase {
 
   // Test valid DID scheme
   func testParseValidDidClientId() {
-    let clientId = "\(OpenId4VPSpec.clientIdSchemeDid):exampleClientId"
+    let originalClientId = "exampleClientId"
+    let clientId = "\(OpenId4VPSpec.clientIdSchemeDid):\(originalClientId)"
     let result = VerifierId.parse(clientId: clientId)
 
     switch result {
     case .success(let verifierId):
       XCTAssertEqual(verifierId.scheme, .decentralizedIdentifier)
-      XCTAssertEqual(verifierId.originalClientId, clientId)
+      XCTAssertEqual(verifierId.originalClientId, originalClientId)
       XCTAssertEqual(verifierId.clientId, clientId)
     case .failure:
       XCTFail("Parsing failed for valid DID client ID")
