@@ -148,7 +148,10 @@ final class OpenID4VPTests: DiXCTest {
   func testAuthorize_WhenWalletConfigurationIsNil_ReturnsInvalidResolutionWithMissingConfig() async {
     let vp = OpenID4VP(walletConfiguration: nil)
     let url = URL(string: "https://example.com/valid-request")!
-    let result = await vp.authorize(url: url)
+    let result = await vp.authorize(
+      fetcher: Fetcher<String>(),
+      url: url
+    )
 
     switch result {
     case .invalidResolution(let error, let dispatchDetails):
@@ -183,7 +186,8 @@ final class OpenID4VPTests: DiXCTest {
     let resolver = AuthorizationRequestResolver()
     let request = try await resolver.resolve(
       walletConfiguration: walletConfiguration,
-      unvalidatedRequest: unvalidatedRequest.get()
+      unvalidatedRequest: unvalidatedRequest.get(),
+      fetcher: Fetcher<String>()
     )
 
     switch request {
@@ -208,7 +212,8 @@ final class OpenID4VPTests: DiXCTest {
     do {
       _ = try await resolver.resolve(
         walletConfiguration: walletConfiguration,
-        unvalidatedRequest: unvalidatedRequest.get()
+        unvalidatedRequest: unvalidatedRequest.get(),
+        fetcher: Fetcher<String>(),
       )
     } catch _ as FetchError {
       XCTAssert(true)

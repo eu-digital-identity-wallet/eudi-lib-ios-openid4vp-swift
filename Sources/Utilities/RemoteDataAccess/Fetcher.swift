@@ -56,6 +56,11 @@ public protocol Fetching: Sendable {
     - Returns: A `Result` type with the fetched data or an error.
    */
   func fetch(url: URL) async -> Result<Element, FetchError>
+  
+  func fetchString(
+    session: Networking,
+    url: URL
+  ) async throws -> Result<String, FetchError>
 }
 
 public struct Fetcher<Element: Codable & Sendable>: Fetching {
@@ -108,7 +113,7 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
   }
 
   public func fetchString(
-    session: URLSession = URLSession.shared,
+    session: Networking = URLSession.shared,
     url: URL
   ) async throws -> Result<String, FetchError> {
     do {

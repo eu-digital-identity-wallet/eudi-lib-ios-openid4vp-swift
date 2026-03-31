@@ -20,9 +20,11 @@ import SwiftyJSON
 internal actor RequestFetcher {
   
   let config: OpenId4VPConfiguration
+  let fetcher: any Fetching
   
-  init(config: OpenId4VPConfiguration) {
+  init(config: OpenId4VPConfiguration, fetcher: any Fetching) {
     self.config = config
+    self.fetcher = fetcher
   }
   
   func fetchRequest(request: UnvalidatedRequest) async throws -> FetchedRequest {
@@ -95,9 +97,7 @@ internal actor RequestFetcher {
     requestUrl: URL
   ) async throws -> String {
     let jwt = try await getJwtString(
-      fetcher: Fetcher(
-        session: config?.session ?? URLSession.shared
-      ),
+      fetcher: fetcher,
       requestUrl: requestUrl
     )
     
@@ -115,10 +115,10 @@ internal actor RequestFetcher {
   
   fileprivate struct ResultType: Codable {}
   fileprivate func getJwtString(
-    fetcher: Fetcher<ResultType> = Fetcher(),
+    fetcher: any Fetching,
     requestUrl: URL
   ) async throws -> String {
-    let jwtResult = try await fetcher.fetchString(url: requestUrl)
+    let jwtResult = try await fetcher.fetchString(session: config.session, url: requestUrl)
     switch jwtResult {
     case .success(let string):
       return try extractJWT(string)

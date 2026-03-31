@@ -183,6 +183,7 @@ final class DirectPostTests: DiXCTest {
     
     overrideDependencies()
     let result = await sdk.authorize(
+      fetcher: Fetcher<String>(),
       url: URL(
         string: url
       )!
@@ -266,6 +267,7 @@ final class DirectPostTests: DiXCTest {
     
     overrideDependencies()
     let result = await sdk.authorize(
+      fetcher: Fetcher<String>(),
       url: URL(
         string: url
       )!

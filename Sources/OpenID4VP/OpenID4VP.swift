@@ -24,7 +24,7 @@ import SwiftyJSON
  
  */
 public protocol OpenID4VPType {
-  func authorize(url: URL) async -> AuthorizationRequest
+  func authorize(fetcher: any Fetching, url: URL) async -> AuthorizationRequest
   func dispatch(session: Networking?, response: AuthorizationResponse) async throws -> DispatchOutcome
   func submit()
   func consent()
@@ -44,7 +44,7 @@ public class OpenID4VP: OpenID4VPType {
     registerDependencies()
   }
 
-  public func authorize(url: URL) async -> AuthorizationRequest {
+  public func authorize(fetcher: any Fetching, url: URL) async -> AuthorizationRequest {
 
     guard let walletConfiguration = walletConfiguration else {
       return .invalidResolution(
@@ -60,7 +60,8 @@ public class OpenID4VP: OpenID4VPType {
     case .success(let request):
       return await authorizatinRequestResolver.resolve(
         walletConfiguration: walletConfiguration,
-        unvalidatedRequest: request
+        unvalidatedRequest: request,
+        fetcher: fetcher
       )
 
     case .failure(let error):

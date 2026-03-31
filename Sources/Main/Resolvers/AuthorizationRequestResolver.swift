@@ -19,7 +19,8 @@ import JOSESwift
 public protocol AuthorizationRequestResolving: Sendable {
   func resolve(
     walletConfiguration: OpenId4VPConfiguration,
-    unvalidatedRequest: UnvalidatedRequest
+    unvalidatedRequest: UnvalidatedRequest,
+    fetcher: any Fetching
   ) async -> AuthorizationRequest
 }
 
@@ -29,7 +30,8 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
 
   public func resolve(
     walletConfiguration: OpenId4VPConfiguration,
-    unvalidatedRequest: UnvalidatedRequest
+    unvalidatedRequest: UnvalidatedRequest,
+    fetcher: any Fetching
   ) async -> AuthorizationRequest {
 
     let clientMetaDataValidator: ClientMetaDataValidator = .init()
@@ -45,7 +47,8 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
     do {
       fetchedRequest = try await fetchRequest(
         config: walletConfiguration,
-        unvalidatedRequest: unvalidatedRequest
+        unvalidatedRequest: unvalidatedRequest,
+        fetcher: fetcher
       )
     } catch {
       return .invalidResolution(
@@ -186,10 +189,12 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
 
   private func fetchRequest(
     config: OpenId4VPConfiguration,
-    unvalidatedRequest: UnvalidatedRequest
+    unvalidatedRequest: UnvalidatedRequest,
+    fetcher: any Fetching
   ) async throws -> FetchedRequest {
     try await RequestFetcher(
-      config: config
+      config: config,
+      fetcher: fetcher
     ).fetchRequest(request: unvalidatedRequest)
   }
 
