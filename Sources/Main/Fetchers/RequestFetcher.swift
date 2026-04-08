@@ -118,7 +118,7 @@ internal actor RequestFetcher {
     fetcher: any Fetching,
     requestUrl: URL
   ) async throws -> String {
-    let jwtResult = try await fetcher.fetchString(session: config.session, url: requestUrl)
+    let jwtResult = try await fetcher.fetchString(url: requestUrl)
     switch jwtResult {
     case .success(let string):
       return try extractJWT(string)

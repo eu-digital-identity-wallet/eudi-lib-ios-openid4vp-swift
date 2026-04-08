@@ -332,9 +332,12 @@ final class DirectPostJWTTests: DiXCTest {
     let url = session["request_uri"]
     let clientId = session["client_id"]
     
+    let sessionConfig = URLSessionConfiguration.default
+    sessionConfig.httpAdditionalHeaders = ["header": "value"]
+    
     overrideDependencies()
     let result = await sdk.authorize(
-      fetcher: Fetcher<String>(),
+      fetcher: Fetcher<String>(session: URLSession(configuration: sessionConfig)),
       url: URL(
         string: "eudi-wallet://authorize?client_id=\(clientId!)&request_uri=\(url!)"
       )!

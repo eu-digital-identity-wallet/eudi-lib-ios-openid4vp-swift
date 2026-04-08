@@ -57,7 +57,6 @@ public protocol Fetching: Sendable {
     - Returns: A `Result` type with the fetched data or an error.
   */
   func fetch(
-    session: Networking,
     url: URL
   ) async -> Result<Element, FetchError>
   
@@ -71,7 +70,6 @@ public protocol Fetching: Sendable {
     - Returns: A `Result` type with the fetched data or an error.
   */
   func fetchString(
-    session: Networking,
     url: URL
   ) async throws -> Result<String, FetchError>
 }
@@ -99,7 +97,6 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
    - Returns: A Result type with the fetched data or an error.
    */
   public func fetch(
-    session: Networking = URLSession.shared,
     url: URL
   ) async -> Result<Element, FetchError> {
     do {
@@ -129,11 +126,10 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
   }
 
   public func fetchString(
-    session: Networking = URLSession.shared,
     url: URL
   ) async throws -> Result<String, FetchError> {
     do {
-      let (data, response) = try await session.data(from: url)
+      let (data, response) = try await self.session.data(from: url)
       let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
       if !statusCode.isWithinRange(200...299) {
         throw FetchError.invalidStatusCode(url, statusCode)
