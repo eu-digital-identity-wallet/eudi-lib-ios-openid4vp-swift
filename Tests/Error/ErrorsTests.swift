@@ -182,19 +182,156 @@ class JOSEErrorTests: XCTestCase {
 
 class AuthorizationRequestErrorCodeTest: XCTestCase {
 
-  func testFromErrorEqual() {
-    let expectedCode: AuthorizationRequestErrorCode = .invalidRequest
-    let validationError: ValidationError = .invalidRequest
-    let result = AuthorizationRequestErrorCode.fromError(validationError)
+  // MARK: - Client-related errors → invalid_client
 
-    XCTAssertEqual(result, expectedCode)
+  func testUnsupportedClientIdScheme_MapsToInvalidClient() {
+    let error: ValidationError = .unsupportedClientIdScheme("unknown")
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidClient)
+    XCTAssertEqual(result.rawValue, "invalid_client")
   }
 
-  func testFromErrorNotEqual() {
-    let validationError: ValidationError = .invalidUri
-    let result = AuthorizationRequestErrorCode.fromError(validationError)
+  func testInvalidClientMetadata_MapsToInvalidClient() {
+    let error: ValidationError = .invalidClientMetadata
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidClient)
+  }
 
+  func testClientIdMismatch_MapsToInvalidClient() {
+    let error: ValidationError = .clientIdMismatch("expected", "actual")
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidClient)
+  }
+
+  func testMissingClientId_MapsToInvalidClient() {
+    let error: ValidationError = .missingClientId
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidClient)
+  }
+
+  func testInvalidVerifierAttestationFormat_MapsToInvalidClient() {
+    let error: ValidationError = .invalidVerifierAttestationFormat
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidClient)
+  }
+
+  // MARK: - Request URI errors → invalid_request_uri
+
+  func testInvalidRequestUri_MapsToInvalidRequestURI() {
+    let error: ValidationError = .invalidRequestUri("https://example.com")
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequestURI)
+    XCTAssertEqual(result.rawValue, "invalid_request_uri")
+  }
+
+  func testInvalidUri_MapsToInvalidRequestURI() {
+    let error: ValidationError = .invalidUri
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequestURI)
+  }
+
+  func testInvalidRequestUriMethod_MapsToInvalidRequestURIMethod() {
+    let error: ValidationError = .invalidRequestUriMethod
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequestURIMethod)
+    XCTAssertEqual(result.rawValue, "invalid_request_uri_method")
+  }
+
+  // MARK: - Request object errors (JAR) → invalid_request_object
+
+  func testInvalidJwtPayload_MapsToInvalidRequestObject() {
+    let error: ValidationError = .invalidJwtPayload
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequestObject)
+    XCTAssertEqual(result.rawValue, "invalid_request_object")
+  }
+
+  func testUnsupportedAlgorithm_MapsToInvalidRequestObject() {
+    let error: ValidationError = .unsupportedAlgorithm("RS256")
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequestObject)
+  }
+
+  func testInvalidKey_MapsToInvalidRequestObject() {
+    let error: ValidationError = .invalidKey
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequestObject)
+  }
+
+  // MARK: - Format errors → vp_formats_not_supported
+
+  func testInvalidFormat_MapsToVpFormatsNotSupported() {
+    let error: ValidationError = .invalidFormat
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .vpFormatsNotSupported)
+    XCTAssertEqual(result.rawValue, "vp_formats_not_supported")
+  }
+
+  // MARK: - Consent errors → access_denied
+
+  func testNegativeConsent_MapsToAccessDenied() {
+    let error: ValidationError = .negativeConsent
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .accessDenied)
+    XCTAssertEqual(result.rawValue, "access_denied")
+  }
+
+  func testUnsupportedConsent_MapsToAccessDenied() {
+    let error: ValidationError = .unsupportedConsent
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .accessDenied)
+  }
+
+  // MARK: - Non-dispatchable errors → processing_error
+
+  func testNonDispatchable_MapsToProcessingFailure() {
+    let error: ValidationError = .nonDispatchable(.invalidRequest)
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .processingFailure)
+    XCTAssertEqual(result.rawValue, "processing_error")
+  }
+
+  // MARK: - Generic validation errors → invalid_request
+
+  func testInvalidRequest_MapsToInvalidRequest() {
+    let error: ValidationError = .invalidRequest
+    let result = AuthorizationRequestErrorCode.fromError(error)
     XCTAssertEqual(result, .invalidRequest)
+    XCTAssertEqual(result.rawValue, "invalid_request")
+  }
+
+  func testMissingNonce_MapsToInvalidRequest() {
+    let error: ValidationError = .missingNonce
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequest)
+  }
+
+  func testMissingResponseType_MapsToInvalidRequest() {
+    let error: ValidationError = .missingResponseType
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequest)
+  }
+
+  func testValidationErrorGeneric_MapsToInvalidRequest() {
+    let error: ValidationError = .validationError("Some validation failed")
+    let result = AuthorizationRequestErrorCode.fromError(error)
+    XCTAssertEqual(result, .invalidRequest)
+  }
+
+  // MARK: - Raw value verification
+
+  func testAllErrorCodesHaveCorrectRawValues() {
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidScope.rawValue, "invalid_scope")
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidRequest.rawValue, "invalid_request")
+    XCTAssertEqual(AuthorizationRequestErrorCode.accessDenied.rawValue, "access_denied")
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidClient.rawValue, "invalid_client")
+    XCTAssertEqual(AuthorizationRequestErrorCode.vpFormatsNotSupported.rawValue, "vp_formats_not_supported")
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidRequestURIMethod.rawValue, "invalid_request_uri_method")
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidTransactionData.rawValue, "invalid_transaction_data")
+    XCTAssertEqual(AuthorizationRequestErrorCode.userCancelled.rawValue, "user_cancelled")
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidRequestURI.rawValue, "invalid_request_uri")
+    XCTAssertEqual(AuthorizationRequestErrorCode.invalidRequestObject.rawValue, "invalid_request_object")
+    XCTAssertEqual(AuthorizationRequestErrorCode.processingFailure.rawValue, "processing_error")
   }
 
 }

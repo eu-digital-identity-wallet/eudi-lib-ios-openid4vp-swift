@@ -15,7 +15,7 @@
  */
 import Foundation
 
-enum AuthorizationRequestErrorCode: String {
+public enum AuthorizationRequestErrorCode: String, Sendable {
   // OAUTH2 & OpenID4VP
 
   /// Requested scope value is invalid, unknown, or malformed
@@ -56,10 +56,84 @@ enum AuthorizationRequestErrorCode: String {
 extension AuthorizationRequestErrorCode {
 
   /// Maps an `AuthorizationRequestError` into an `AuthorizationRequestErrorCode`
-  static func fromError(_ error: AuthorizationRequestError) -> AuthorizationRequestErrorCode {
-    if let validatetionError = error as? ValidationError {
-      switch validatetionError {
-      default: return .invalidRequest
+  public static func fromError(_ error: AuthorizationRequestError) -> AuthorizationRequestErrorCode {
+    if let validationError = error as? ValidationError {
+      switch validationError {
+      // Client-related errors
+      case .unsupportedClientIdScheme:
+        return .invalidClient
+      case .invalidClientMetadata:
+        return .invalidClient
+      case .clientIdMismatch:
+        return .invalidClient
+      case .invalidClientId:
+        return .invalidClient
+      case .missingClientId:
+        return .invalidClient
+      case .invalidJarmClientMetadata:
+        return .invalidClient
+      case .invalidVerifierAttestationFormat:
+        return .invalidClient
+      case .invalidVerifierAttestationCredentialIds:
+        return .invalidClient
+
+      // Request URI errors
+      case .invalidRequestUri:
+        return .invalidRequestURI
+      case .invalidUri:
+        return .invalidRequestURI
+      case .invalidRequestUriMethod:
+        return .invalidRequestURIMethod
+
+      // Request object errors (JAR)
+      case .invalidJWTWebKeySet:
+        return .invalidRequestObject
+      case .invalidJwtPayload:
+        return .invalidRequestObject
+      case .unsupportedAlgorithm:
+        return .invalidRequestObject
+      case .unsupportedMethod:
+        return .invalidRequestObject
+      case .invalidKey:
+        return .invalidRequestObject
+
+      // Format errors
+      case .invalidFormat:
+        return .vpFormatsNotSupported
+
+      // User/consent errors
+      case .unsupportedConsent:
+        return .accessDenied
+      case .negativeConsent:
+        return .accessDenied
+
+      // Non-dispatchable errors
+      case .nonDispatchable:
+        return .processingFailure
+
+      // All other validation errors map to invalid_request
+      case .validationError,
+           .unsupportedResponseType,
+           .unsupportedResponseMode,
+           .invalidResponseType,
+           .noAuthorizationData,
+           .invalidAuthorizationData,
+           .invalidConfiguration,
+           .missingRequiredField,
+           .invalidRequest,
+           .conflictingData,
+           .notSupportedOperation,
+           .invalidWalletConfiguration,
+           .emptyValue,
+           .multipleQuerySources,
+           .invalidQuerySource,
+           .invalidUseOfBothRequestAndRequestUri,
+           .missingConfiguration,
+           .missingResponseType,
+           .missingNonce,
+           .invalidJarmRequirement,
+           .invalidResponseEncryptionSpecification:
+        return .invalidRequest
       }
     }
     return .invalidRequest
