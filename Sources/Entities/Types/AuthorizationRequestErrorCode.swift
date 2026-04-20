@@ -27,7 +27,7 @@ public enum AuthorizationRequestErrorCode: String, Sendable {
   /// The Wallet did not have the requested Credentials to satisfy the Authorization Request.
   case accessDenied = "access_denied"
 
-  /// client_metadata parameter is present, but the Wallet recognizes Client Identifier
+  /// The client is invalid
   case invalidClient = "invalid_client"
 
   /// The Wallet does not support any of the formats requested by the Verifier
@@ -36,6 +36,7 @@ public enum AuthorizationRequestErrorCode: String, Sendable {
   /// The value of the request_uri_method request parameter is neither get nor post
   case invalidRequestURIMethod = "invalid_request_uri_method"
 
+  /// Invalid transaction data
   case invalidTransactionData = "invalid_transaction_data"
 
   // Error Codes
