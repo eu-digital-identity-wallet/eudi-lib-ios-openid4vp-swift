@@ -150,6 +150,7 @@ final class OpenID4VPTests: DiXCTest {
     let url = URL(string: "https://example.com/valid-request")!
     let result = await vp.authorize(
       fetcher: Fetcher<String>(),
+      poster: Poster(),
       url: url
     )
 
@@ -187,7 +188,8 @@ final class OpenID4VPTests: DiXCTest {
     let request = try await resolver.resolve(
       walletConfiguration: walletConfiguration,
       unvalidatedRequest: unvalidatedRequest.get(),
-      fetcher: Fetcher<String>()
+      fetcher: Fetcher<String>(),
+      poster: Poster()
     )
 
     switch request {
@@ -214,6 +216,7 @@ final class OpenID4VPTests: DiXCTest {
         walletConfiguration: walletConfiguration,
         unvalidatedRequest: unvalidatedRequest.get(),
         fetcher: Fetcher<String>(),
+        poster: Poster()
       )
     } catch _ as FetchError {
       XCTAssert(true)

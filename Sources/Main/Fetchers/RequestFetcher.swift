@@ -21,10 +21,16 @@ internal actor RequestFetcher {
   
   let config: OpenId4VPConfiguration
   let fetcher: any Fetching
+  let poster: any Posting
   
-  init(config: OpenId4VPConfiguration, fetcher: any Fetching) {
+  init(
+    config: OpenId4VPConfiguration,
+    fetcher: any Fetching,
+    poster: any Posting
+  ) {
     self.config = config
     self.fetcher = fetcher
+    self.poster = poster
   }
   
   func fetchRequest(request: UnvalidatedRequest) async throws -> FetchedRequest {
@@ -157,6 +163,7 @@ internal actor RequestFetcher {
     )
     
     let jwt = try await postJwtString(
+      poster: poster,
       walletMetaData: walletMetadata,
       nonce: nonce,
       requestUrl: requestUrl
@@ -184,7 +191,7 @@ internal actor RequestFetcher {
   }
   
   fileprivate func postJwtString(
-    poster: Poster = Poster(),
+    poster: any Posting,
     walletMetaData: JSON?,
     nonce: String?,
     requestUrl: URL
