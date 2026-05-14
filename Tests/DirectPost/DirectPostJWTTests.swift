@@ -45,7 +45,7 @@ final class DirectPostJWTTests: DiXCTest {
           TestsConstants.testClientId: .init(
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
-            jarSigningAlg: .init(.RS256),
+            jarSigningAlg: .init(.ES256),
             jwkSetSource: .fetchByReference(url: publicKeysURL)
           )
         ]),

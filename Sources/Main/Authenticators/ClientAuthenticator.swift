@@ -71,7 +71,10 @@ internal actor ClientAuthenticator {
     
     switch scheme {
     case .preregistered(let clients):
-      guard let client = clients[verifierId.originalClientId] else {
+      guard
+        let key = clients.keys.first,
+        let client = clients[key]
+      else {
         throw ValidationError.validationError("preregistered client not found")
       }
       return .preRegistered(
