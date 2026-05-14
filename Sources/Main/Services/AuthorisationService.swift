@@ -90,7 +90,7 @@ public actor AuthorisationService: AuthorisationServiceType {
       // Handle invalid request case
       if case .invalidRequest(let error, _, let state, _) = data {
         let payload: [String: Any] = [
-          "error": AuthorizationRequestErrorCode.fromError(error),
+          "error": AuthorizationRequestErrorCode.fromError(error).rawValue,
           "error_description": error.localizedDescription,
           "state": state as Any
         ].compactMapValues { $0 }
@@ -148,7 +148,7 @@ private extension AuthorisationService {
     switch payload {
     case .invalidRequest(let error, _, let state, _):
       return [
-        "error": AuthorizationRequestErrorCode.fromError(error),
+        "error": AuthorizationRequestErrorCode.fromError(error).rawValue,
         "error_description": error.localizedDescription,
         "state": state as Any
       ].compactMapValues { $0 }

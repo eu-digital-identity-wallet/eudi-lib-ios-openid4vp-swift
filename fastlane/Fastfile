@@ -13,20 +13,16 @@ platform :ios do
   desc "Code coverage"
   lane :code_coverage do
     
-    # You can convert the generated report to JSON using the following command:
-    # xcrun xccov view xcov_output/xccovreport-0.xccovreport --json
-    
     params = {
       package_path: '.',
       scheme: 'OpenID4VP',
       destination: "platform=iOS Simulator,name=iPhone 16,OS=18.5",
       output_directory: "xcov_output",
-      result_bundle: true
+      result_bundle: true,
+      parallel_testing: false,
+      xcodebuild_formatter: "xcbeautify",
+      xcargs: ENV['CI'] ? "-skipPackagePluginValidation" : nil
     }
-
-    if ENV['CI'] 
-      params[:xcargs] = "-skipPackagePluginValidation"
-    end
 
     run_tests(params)
 
@@ -50,6 +46,10 @@ platform :ios do
       result_bundle: true
     }
 
+    if ENV['CI'] 
+      params[:xcargs] = "-skipPackagePluginValidation"
+    end
+
     run_tests(params)
   end
 
@@ -57,7 +57,7 @@ platform :ios do
   lane :just_build do
     xcodebuild(
       scheme: "OpenID4VP",
-      destination: "platform=iOS Simulator,OS=16.2,name=iPhone 8",
+      destination: "platform=iOS Simulator,name=iPhone 16,OS=18.5",
       xcargs: "-skipPackagePluginValidation -disableAutomaticPackageResolution"
     )
   end

@@ -175,6 +175,11 @@ public struct ClaimId: Codable, Hashable, Sendable {
   public static func ensureValid(_ value: String) throws {
     try DCQLId.ensureValid(value)
   }
+    
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(id)
+  }
   
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -377,13 +382,13 @@ public struct ClaimsQuery: Codable, Equatable, Sendable {
 extension ClaimsQuery {
   
   func ensureMsoMdoc() throws -> ClaimsQuery {
-    if path.value.count != 2 {
+    if path.value.count < 2 {
       throw DCQLError.error(
-        "Claim paths for mso mdoc based must have exactly two elements"
+        "Claim paths for mso mdoc based must have at least two elements (namespace and element identifier)"
       )
     }
-    
-    let claimsSatisfy = path.value.allSatisfy { element in
+
+    let firstTwoAreClaims = path.value.prefix(2).allSatisfy { element in
       switch element {
       case .claim:
         return true
@@ -391,9 +396,9 @@ extension ClaimsQuery {
         return false
       }
     }
-    if !claimsSatisfy {
+    if !firstTwoAreClaims {
       throw DCQLError.error(
-        "ClaimPaths for MSO MDoc based formats must contain only Claim ClaimPathElements"
+        "The first two elements of an MSO MDoc ClaimPath (namespace and element identifier) must be Claim elements"
       )
     }
     return self

@@ -34,8 +34,10 @@ public struct VerifierId: Sendable {
         return OpenId4VPSpec.clientIdSchemeX509SanDns
       case .verifierAttestation:
         return OpenId4VPSpec.clientIdSchemeVerifierAttestation
-      case.decentralizedIdentifier:
+      case .decentralizedIdentifier:
         return OpenId4VPSpec.clientIdSchemeDid
+      case .openidFederation:
+        return OpenId4VPSpec.clientIdSchemeOpenidFederation
       default:
         return nil
       }
@@ -85,7 +87,7 @@ public struct VerifierId: Sendable {
         case .redirectUri, .x509SanDns, .x509Hash, .verifierAttestation:
           return VerifierId(scheme: scheme, originalClientId: originalClientId)
         case .openidFederation, .decentralizedIdentifier:
-          return VerifierId(scheme: scheme, originalClientId: clientId)
+          return VerifierId(scheme: scheme, originalClientId: originalClientId)
         }
       }
     }

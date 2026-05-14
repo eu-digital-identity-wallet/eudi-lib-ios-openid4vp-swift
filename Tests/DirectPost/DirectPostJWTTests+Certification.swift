@@ -68,6 +68,8 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
     
     overrideDependencies()
     let result = await sdk.authorize(
+      fetcher: Fetcher<String>(),
+      poster: Poster(),
       url: URL(
         string: "eudi-wallet://authorize?client_id=\(clientId)&request_uri=\(url)"
       )!
@@ -165,6 +167,8 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
     
     overrideDependencies()
     let result = await sdk.authorize(
+      fetcher: Fetcher<String>(),
+      poster: Poster(),
       url: URL(
         string: "eudi-wallet://authorize?client_id=\(clientId)&request_uri=\(url)"
       )!
@@ -266,6 +270,8 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
     
     overrideDependencies()
     let result = await sdk.authorize(
+      fetcher: Fetcher<String>(),
+      poster: Poster(),
       url: URL(
         string: "eudi-wallet://authorize?client_id=\(clientId)&request_uri=\(url)"
       )!

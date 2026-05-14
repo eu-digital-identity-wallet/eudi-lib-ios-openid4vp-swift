@@ -60,6 +60,16 @@ public protocol Posting: Sendable {
    - Returns: A Result type with a success boolean (based on status code) or an error.
    */
   func check(key: String, request: URLRequest) async -> Result<(String, Bool), PostError>
+  
+  /**
+   Performs a POST request with the provided URLRequest.
+   
+   - Parameters:
+   - request: The URLRequest to be used for the POST request.
+   
+   - Returns: A String or an error.
+   */
+  func postString(request: URLRequest) async -> Result<String, PostError>
 }
 
 public struct Poster: Posting {
