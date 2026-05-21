@@ -86,6 +86,56 @@ final class TransactionDataTests: XCTestCase {
       XCTFail("Parsing failed with error: \(error)")
     }
   }
+  
+  func testParseTransactionWithTypeSpecificParameters() throws {
+
+    // Given transaction data
+    let transactionData = TransactionData.create(
+      type: try .init(value: "example-type"),
+      credentialIds: [
+        try .init(value: "query_0"),
+      ],
+      hashAlgorithms: nil,
+      builder: { (json: inout JSON) in
+        json["example-parameter-0"] = "value_0"
+        json["example-parameter-1"] = "value_1"
+      }
+    )
+
+    // Create a supported type that matches the sample transaction data.
+    let supportedType: SupportedTransactionDataType = try .init(
+      type: .init(value: "example-type"),
+    )
+
+    // Parse the transaction data.
+    let result = TransactionData.parse(
+      transactionData.value,
+      supportedTypes: [supportedType],
+      presentationQuery: .byDigitalCredentialsQuery(try! .init(credentials: [
+        .init(
+          id: .init(value: "query_0"),
+          format: .init(format: "mso_mdoc"),
+          meta: [:]
+        )
+      ]))
+    )
+
+    switch result {
+    case .success(let parsedData):
+      // Validate that the parsed data has the expected type.
+      let parsedType = try parsedData.type().value
+      XCTAssertEqual(parsedType, "example-type")
+      
+      let specificParameters = try parsedData.specificParameters()
+      XCTAssertEqual(specificParameters["example-parameter-0"] as! String, "value_0")
+      XCTAssertEqual(specificParameters["example-parameter-1"] as! String, "value_1")
+      XCTAssertNil(specificParameters[OpenId4VPSpec.TRANSACTION_DATA_TYPE])
+      XCTAssertNil(specificParameters[OpenId4VPSpec.TRANSACTION_DATA_CREDENTIAL_IDS])
+      XCTAssertNil(specificParameters[OpenId4VPSpec.TRANSACTION_DATA_HASH_ALGORITHMS])
+    case .failure(let error):
+      XCTFail("Parsing failed with error: \(error)")
+    }
+  }
 
   func testParsingFailsWhenTransactionDataContainsUnsupportedType() throws {
 

@@ -18,18 +18,11 @@ import SwiftyJSON
 
 // MARK: - TransactionData
 
-public enum TransactionData: Codable, Sendable {
-  case sdJwtVc(value: String)
-
-  public var value: String {
-    switch self {
-    case .sdJwtVc(let value):
-      return value
-    }
-  }
+public struct TransactionData: Codable, Sendable {
+  public var value: String
   
   public init(value: String) {
-    self = .sdJwtVc(value: value)
+    self.value = value
   }
 
   public init(
@@ -49,6 +42,22 @@ public enum TransactionData: Codable, Sendable {
   public func credentialIds() throws -> [QueryId] {
     try decode(value).credentialIds()
   }
+  
+  public func hashAlgorithms() throws -> [HashAlgorithm] {
+    try decode(value).hashAlgorithms()
+  }
+  
+  /// Get type specific parameters from TransactionData
+  public func specificParameters() throws -> [String: Any] {
+    var jsonDictionary = try decode(value).dictionaryObject
+    
+    jsonDictionary?.removeValue(forKey: OpenId4VPSpec.TRANSACTION_DATA_TYPE)
+    jsonDictionary?.removeValue(forKey: OpenId4VPSpec.TRANSACTION_DATA_CREDENTIAL_IDS)
+    jsonDictionary?.removeValue(forKey: OpenId4VPSpec.TRANSACTION_DATA_HASH_ALGORITHMS)
+
+    return jsonDictionary ?? [:]
+  }
+
 
   /// Parses a TransactionData from a string, validating against supported types and the presentation query.
   public static func parse(

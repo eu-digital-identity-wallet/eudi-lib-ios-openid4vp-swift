@@ -15,47 +15,30 @@
  */
 import Foundation
 
-public enum SupportedTransactionDataType: Codable, Sendable {
-  case sdJwtVc(
-    type: TransactionDataType,
-    hashAlgorithms: Set<HashAlgorithm>
-  )
-
-  public init(type: TransactionDataType, hashAlgorithms: Set<HashAlgorithm>) throws {
+public struct SupportedTransactionDataType: Codable, Sendable {
+  public let type: TransactionDataType
+  public let hashAlgorithms: Set<HashAlgorithm>
+  
+  public init(type: TransactionDataType, hashAlgorithms: Set<HashAlgorithm> = .init([.sha256])) throws {
     guard !hashAlgorithms.isEmpty else {
       throw ValidationError.validationError(
         "SupportedTransactionDataTypeError hashAlgorithms cannot be empty"
       )
     }
+
     guard hashAlgorithms.contains(HashAlgorithm.sha256) else {
       throw ValidationError.validationError(
         "SupportedTransactionDataTypeError  'sha-256' must be a supported hash algorithm"
       )
     }
-    self = .sdJwtVc(
-      type: type,
-      hashAlgorithms: hashAlgorithms
-    )
+
+    self.type = type
+    self.hashAlgorithms = hashAlgorithms
   }
 
   public static func `default`() -> SupportedTransactionDataType {
     try! .init(
       type: .init(value: "transaction_data"),
-      hashAlgorithms: .init([.sha256])
     )
-  }
-  
-  public var type: TransactionDataType {
-    switch self {
-    case .sdJwtVc(let type, _):
-      return type
-    }
-  }
-  
-  public var hashAlgorithms: Set<HashAlgorithm> {
-    switch self {
-    case .sdJwtVc(_, let hashAlgorithms):
-      return hashAlgorithms
-    }
   }
 }

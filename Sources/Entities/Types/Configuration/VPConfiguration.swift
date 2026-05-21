@@ -37,7 +37,6 @@ public struct VPConfiguration: Sendable {
       supportedTransactionDataTypes: [
         .init(
           type: .init(value: "authorization"),
-          hashAlgorithms: Set([.sha256])
         )
       ]
     )
