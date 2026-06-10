@@ -63,32 +63,31 @@ public struct VerifierId: Sendable {
         return ValidationError.validationError(message)
       }
 
-      if clientId.contains(OpenId4VPSpec.clientIdSchemeDIDWithSeparator) {
+      guard clientId.contains(OpenId4VPSpec.clientIdSchemeSeparator) else {
         return VerifierId(scheme: .preRegistered, originalClientId: clientId)
+      }
 
-      } else if !clientId.contains(OpenId4VPSpec.clientIdSchemeSeparator) {
+      let parts = clientId.split(separator: OpenId4VPSpec.clientIdSchemeSeparator, maxSplits: 1)
+      guard parts.count == 2 else {
+        throw invalid("Invalid clientId format")
+      }
+      let schemeString = String(parts[0])
+      let originalClientId = String(parts[1])
+
+      guard let scheme = ClientIdPrefix(rawValue: schemeString) else {
+        // No recognized Client Identifier Prefix: treat the whole value as a
+        // pre-registered client id. This covers DID-shaped client ids such as
+        // "did:web:example.com", whose first segment ("did") is not a prefix.
         return VerifierId(scheme: .preRegistered, originalClientId: clientId)
+      }
 
-      } else {
-        let parts = clientId.split(separator: OpenId4VPSpec.clientIdSchemeSeparator, maxSplits: 1)
-        guard parts.count == 2 else {
-          throw invalid("Invalid clientId format")
-        }
-        let schemeString = String(parts[0])
-        let originalClientId = String(parts[1])
-
-        guard let scheme = ClientIdPrefix(rawValue: schemeString) else {
-          return VerifierId(scheme: .preRegistered, originalClientId: clientId)
-        }
-
-        switch scheme {
-        case .preRegistered:
-          return VerifierId(scheme: .preRegistered, originalClientId: clientId)
-        case .redirectUri, .x509SanDns, .x509Hash, .verifierAttestation:
-          return VerifierId(scheme: scheme, originalClientId: originalClientId)
-        case .openidFederation, .decentralizedIdentifier:
-          return VerifierId(scheme: scheme, originalClientId: originalClientId)
-        }
+      switch scheme {
+      case .preRegistered:
+        return VerifierId(scheme: .preRegistered, originalClientId: clientId)
+      case .redirectUri, .x509SanDns, .x509Hash, .verifierAttestation:
+        return VerifierId(scheme: scheme, originalClientId: originalClientId)
+      case .openidFederation, .decentralizedIdentifier:
+        return VerifierId(scheme: scheme, originalClientId: originalClientId)
       }
     }
   }

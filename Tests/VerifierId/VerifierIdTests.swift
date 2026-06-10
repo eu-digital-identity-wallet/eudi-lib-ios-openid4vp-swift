@@ -99,6 +99,38 @@ final class VerifierIdTests: XCTestCase {
     }
   }
 
+  // Test valid DID scheme where the original client id is itself a DID
+  // (contains the "did:" separator, e.g. "decentralized_identifier:did:jwk:...")
+  func testParseValidDidClientIdWithDidPayload() {
+    let originalClientId = "did:jwk:eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIn0"
+    let clientId = "\(OpenId4VPSpec.clientIdSchemeDid):\(originalClientId)"
+    let result = VerifierId.parse(clientId: clientId)
+
+    switch result {
+    case .success(let verifierId):
+      XCTAssertEqual(verifierId.scheme, .decentralizedIdentifier)
+      XCTAssertEqual(verifierId.originalClientId, originalClientId)
+      XCTAssertEqual(verifierId.clientId, clientId)
+    case .failure:
+      XCTFail("Parsing failed for valid DID client ID with DID payload")
+    }
+  }
+
+  // Test that a DID-shaped client id without a recognized prefix
+  // (e.g. "did:web:example.com") still falls back to pre-registered
+  func testParseDidShapedClientIdFallsBackToPreRegistered() {
+    let clientId = "did:web:example.com"
+    let result = VerifierId.parse(clientId: clientId)
+
+    switch result {
+    case .success(let verifierId):
+      XCTAssertEqual(verifierId.scheme, .preRegistered)
+      XCTAssertEqual(verifierId.originalClientId, clientId)
+    case .failure:
+      XCTFail("Parsing failed for DID-shaped pre-registered client ID")
+    }
+  }
+
   // Test clientId property for different schemes
   func testClientIdProperty() {
     let verifierId = VerifierId(scheme: .redirectUri, originalClientId: "exampleClientId")
