@@ -36,20 +36,20 @@ public struct TransactionData: Codable, Sendable {
   }
 
   public func type() throws -> TransactionDataType {
-    try decode(value).type()
+    try decode().type()
   }
 
   public func credentialIds() throws -> [QueryId] {
-    try decode(value).credentialIds()
+    try decode().credentialIds()
   }
   
   public func hashAlgorithms() throws -> [HashAlgorithm] {
-    try decode(value).hashAlgorithms()
+    try decode().hashAlgorithms()
   }
   
   /// Get type specific parameters from TransactionData
   public func specificParameters() throws -> [String: Any] {
-    var jsonDictionary = try decode(value).dictionaryObject
+    var jsonDictionary = try decode().dictionaryObject
     
     jsonDictionary?.removeValue(forKey: OpenId4VPSpec.TRANSACTION_DATA_TYPE)
     jsonDictionary?.removeValue(forKey: OpenId4VPSpec.TRANSACTION_DATA_CREDENTIAL_IDS)
@@ -57,7 +57,17 @@ public struct TransactionData: Codable, Sendable {
 
     return jsonDictionary ?? [:]
   }
-
+  
+  /// Decodes the base64-encoded string to JSON.
+  public func decode() throws -> JSON {
+    let decodedData = try Base64UrlNoPadding.decodeToByteString(value)
+    guard
+      let decodedString = String(data: decodedData, encoding: .utf8),
+      let jsonData = decodedString.data(using: .utf8) else {
+      throw ValidationError.validationError("Unable to decode transaction data")
+    }
+    return try JSON(data: jsonData)
+  }
 
   /// Parses a TransactionData from a string, validating against supported types and the presentation query.
   public static func parse(
@@ -76,17 +86,6 @@ public struct TransactionData: Codable, Sendable {
       try transactionData.hasCorrectIds(ids)
       return transactionData
     }
-  }
-
-  /// Decodes the base64-encoded string to JSON.
-  internal func decode(_ s: String) throws -> JSON {
-    let decodedData = try Base64UrlNoPadding.decodeToByteString(s)
-    guard
-      let decodedString = String(data: decodedData, encoding: .utf8),
-      let jsonData = decodedString.data(using: .utf8) else {
-      throw ValidationError.validationError("Unable to decode transaction data")
-    }
-    return try JSON(data: jsonData)
   }
 
   /// Validates if the transaction data type is supported.

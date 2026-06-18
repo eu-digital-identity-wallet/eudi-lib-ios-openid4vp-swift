@@ -34,7 +34,7 @@ final class TransactionDataTests: XCTestCase {
     )
 
     // Decode the transaction data and check the JSON content.
-    let decodedJSON = try transactionData.decode(transactionData.value)
+    let decodedJSON = try transactionData.decode()
 
     // Check that the type, credential IDs, and hash algorithms are as expected.
     let typeFromJSON = try decodedJSON.type().value
@@ -242,7 +242,7 @@ final class TransactionDataTests: XCTestCase {
     )
 
     // Now, decode the base64url string to JSON using the internal decode method.
-    let json = try transactionData.decode(transactionData.value)
+    let json = try transactionData.decode()
 
     // Verify the JSON fields.
     XCTAssertEqual(try json.requiredString(OpenId4VPSpec.TRANSACTION_DATA_TYPE), "test-type")
