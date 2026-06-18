@@ -445,7 +445,7 @@ func generateVerifiablePresentation(
   var claims: [String: Any] = [
     "aud": audience,
     "nonce": nonce,
-    "iat": Int(Date().timeIntervalSince1970) - 100,
+    "iat": Int64(Date().timeIntervalSince1970),
     "sd_hash": sdHash
   ]
   
