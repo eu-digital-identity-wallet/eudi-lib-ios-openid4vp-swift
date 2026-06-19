@@ -136,4 +136,20 @@ final class VerifierIdTests: XCTestCase {
     let verifierId = VerifierId(scheme: .redirectUri, originalClientId: "exampleClientId")
     XCTAssertEqual(verifierId.clientId, "\(OpenId4VPSpec.clientIdSchemeRedirectUri):exampleClientId")
   }
+
+  // Regression: the `.x509Hash` scheme must be re-prefixed by the `clientId` composer.
+  // Before the fix the composer's prefix switch fell through to `default: return nil`
+  // for `.x509Hash`, so `clientId` returned the bare original id with no prefix.
+  func testClientIdComposesX509HashPrefix() {
+    let verifierId = VerifierId(scheme: .x509Hash, originalClientId: "ABC123")
+    XCTAssertEqual(verifierId.clientId, "\(OpenId4VPSpec.clientIdSchemeX509Hash):ABC123")
+    XCTAssertEqual(verifierId.clientId, "x509_hash:ABC123")
+  }
+
+  // Invariant: the `.x509SanDns` scheme composes a single `x509_san_dns:` prefix.
+  func testClientIdComposesX509SanDnsPrefix() {
+    let verifierId = VerifierId(scheme: .x509SanDns, originalClientId: "verifier.example.com")
+    XCTAssertEqual(verifierId.clientId, "\(OpenId4VPSpec.clientIdSchemeX509SanDns):verifier.example.com")
+    XCTAssertEqual(verifierId.clientId, "x509_san_dns:verifier.example.com")
+  }
 }

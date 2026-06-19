@@ -104,7 +104,7 @@ internal actor ClientAuthenticator {
       }
       
       return .x509Hash(
-        clientId: clientId,
+        clientId: verifierId.originalClientId,
         certificate: certificate
       )
       
@@ -123,7 +123,7 @@ internal actor ClientAuthenticator {
       }
       
       return .x509SanDns(
-        clientId: clientId,
+        clientId: verifierId.originalClientId,
         certificate: certificate
       )
       
@@ -138,11 +138,11 @@ internal actor ClientAuthenticator {
       return try verifierAttestation(
         jwt: jwt,
         supportedScheme: scheme,
-        clientId: clientId
+        clientId: verifierId.originalClientId
       )
     case .redirectUri:
       return .redirectUri(
-        clientId: clientId
+        clientId: verifierId.originalClientId
       )
     }
   }
@@ -171,7 +171,7 @@ internal actor ClientAuthenticator {
       )
     case .redirectUri:
       return .redirectUri(
-        clientId: clientId
+        clientId: verifierId.originalClientId
       )
       
     default:
