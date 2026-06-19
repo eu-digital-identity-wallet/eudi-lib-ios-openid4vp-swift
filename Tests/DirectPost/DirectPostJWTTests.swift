@@ -868,7 +868,9 @@ final class DirectPostJWTTests: DiXCTest {
       case .accepted:
         XCTAssert(true)
       default:
+        XCTExpectFailure("Please make sure you have a valid sd-jwt with a valid key binding jwt")
         XCTAssert(false)
+        return
       }
       
       let pollingResult = try await TestsHelpers.pollVerifier(
