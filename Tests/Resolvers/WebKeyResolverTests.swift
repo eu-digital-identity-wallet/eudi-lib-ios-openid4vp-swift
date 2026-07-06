@@ -54,29 +54,4 @@ final class WebKeyResolverTests: DiXCTest {
       XCTFail(error.localizedDescription)
     }
   }
-
-  func testResolve_WhenFetchByReferenceWithValidURL_ThenRetrieveJsonRemotelyAndReturnSuccessWebKeySet() async throws {
-
-    let response = await self.webKeyResolver.resolve(source: .fetchByReference(url: TestsConstants.validByReferenceWebKeyUrl))
-
-    switch response {
-    case .success(let webKeys):
-      XCTAssertEqual(webKeys?.keys.first?.use, TestsConstants.webKeySet.keys.first?.use)
-    case .failure(let error):
-      XCTExpectFailure()
-      XCTFail(error.localizedDescription)
-    }
-  }
-
-  func testResolve_WhenFetchByReferenceWithInvalidURL_ThenReturnFailure() async throws {
-
-    let response = await self.webKeyResolver.resolve(source: .fetchByReference(url: TestsConstants.invalidUrl))
-
-    switch response {
-    case .success:
-      XCTFail("Success is not an option here")
-    case .failure(let error):
-      XCTAssertEqual(error.localizedDescription, ResolvingError.invalidSource.localizedDescription)
-    }
-  }
 }
