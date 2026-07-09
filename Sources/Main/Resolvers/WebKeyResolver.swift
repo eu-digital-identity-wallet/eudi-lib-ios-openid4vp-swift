@@ -53,13 +53,6 @@ public actor WebKeyResolver: WebKeyResolverType {
     switch source {
     case .passByValue(let webKeys):
       return .success(webKeys)
-    case .fetchByReference(let url):
-      let result = await fetcher.fetch(url: url)
-      let webKeys = try? result.get()
-      if let webKeys {
-        return .success(webKeys)
-      }
-      return .failure(.invalidSource)
     }
   }
 }

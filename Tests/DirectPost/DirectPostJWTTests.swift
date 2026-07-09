@@ -37,6 +37,9 @@ final class DirectPostJWTTests: DiXCTest {
     
     let keySet = try WebKeySet(jwk: rsaJWK)
     let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
+    let fetcher = Fetcher<WebKeySet>()
+    let keys = try await fetcher.fetch(url: publicKeysURL).get()
+    
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
       publicWebKeySet: keySet,
@@ -46,7 +49,7 @@ final class DirectPostJWTTests: DiXCTest {
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
             jarSigningAlg: .init(.ES256),
-            jwkSetSource: .fetchByReference(url: publicKeysURL)
+            jwkSetSource: .passByValue(webKeys: keys)
           )
         ]),
         .x509SanDns(trust: { _ in
@@ -311,6 +314,8 @@ final class DirectPostJWTTests: DiXCTest {
     let verifiedClient = try! VerifierId.parse(clientId: session["client_id"] as! String).get()
     let keySet = try WebKeySet(jwk: ecJWK)
     let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
+    let fetcher = Fetcher<WebKeySet>()
+    let keys = try await fetcher.fetch(url: publicKeysURL).get()
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
       publicWebKeySet: keySet,
@@ -320,7 +325,7 @@ final class DirectPostJWTTests: DiXCTest {
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
             jarSigningAlg: .init(.ES256),
-            jwkSetSource: .fetchByReference(url: publicKeysURL)
+            jwkSetSource: .passByValue(webKeys: keys)
           )
         ])
       ],
@@ -405,6 +410,8 @@ final class DirectPostJWTTests: DiXCTest {
     
     let keySet = try WebKeySet(jwk: rsaJWK)
     let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
+    let fetcher = Fetcher<WebKeySet>()
+    let keys = try await fetcher.fetch(url: publicKeysURL).get()
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
       publicWebKeySet: keySet,
@@ -414,7 +421,7 @@ final class DirectPostJWTTests: DiXCTest {
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
             jarSigningAlg: .init(.RS256),
-            jwkSetSource: .fetchByReference(url: publicKeysURL)
+            jwkSetSource: .passByValue(webKeys: keys)
           )
         ]),
         .x509Hash(trust: { _ in true })
