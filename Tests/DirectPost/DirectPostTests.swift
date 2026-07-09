@@ -133,6 +133,8 @@ final class DirectPostTests: DiXCTest {
   func testSDKEndtoEndDirectPostVpTokenWithEncryption() async throws {
     
     let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
+    let fetcher = Fetcher<WebKeySet>()
+    let keys = try await fetcher.fetch(url: publicKeysURL).get()
     
     let rsaPrivateKey = try KeyController.generateRSAPrivateKey()
     let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey)
@@ -157,7 +159,7 @@ final class DirectPostTests: DiXCTest {
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
             jarSigningAlg: .init(.RS256),
-            jwkSetSource: .fetchByReference(url: publicKeysURL)
+            jwkSetSource: .passByValue(webKeys: keys)
           )
         ]),
         .x509SanDns(trust: { _ in
