@@ -133,8 +133,8 @@ public struct TrustedAuthority: Codable, Equatable, Sendable {
   }
   
   private enum CodingKeys: String, CodingKey {
-    case type  = "trusted_authority_type"
-    case values = "trusted_authority_values"
+    case type
+    case values
   }
   
   /// Decodes a `TrustedAuthority` from its JSON representation, validating its contents.
