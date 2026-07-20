@@ -76,7 +76,7 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let nonce: String? = request.nonce
       let presentation: String? = TestsConstants.sdJwtPresentations(
@@ -175,7 +175,7 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let nonce: String? = request.nonce
       let presentation: String? = TestsConstants.sdJwtPresentations(
@@ -278,7 +278,7 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let nonce: String? = request.nonce
       let presentation: String? = TestsConstants.sdJwtPresentations(

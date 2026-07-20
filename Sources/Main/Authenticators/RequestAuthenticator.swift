@@ -15,6 +15,8 @@
  */
 import Foundation
 import SwiftyJSON
+import JOSESwift
+import X509
 
 internal struct AuthenticatedRequest: Sendable {
   let client: Client
@@ -92,7 +94,7 @@ internal actor RequestAuthenticator {
       guard let requestObject = JWTDecoder.decodeJWT(jwt) else {
         throw ValidationError.invalidRequest
       }
-      
+
       try await verify(
         validator: AccessValidator(
           walletOpenId4VPConfig: config,
@@ -103,7 +105,7 @@ internal actor RequestAuthenticator {
         token: jwt,
         clientId: clientId
       )
-      
+
       return .init(client: client, requestObject: requestObject)
     }
   }
@@ -123,12 +125,22 @@ internal actor RequestAuthenticator {
     nonce: String,
     requestObject: UnvalidatedRequestObject,
     clientMetaData: ClientMetaData.Validated
-  ) throws -> ValidatedRequestData {
+  ) async throws -> ValidatedRequestData {
     let formats: VpFormatsSupported = clientMetaData.vpFormatsSupported
     let querySource = try parseQuerySource(
       requestObject: requestObject
     )
-    
+
+    let verifierInfo = try requestObject.verifierInfo?.map({ json in
+      try VerifierInfo.from(json: json)
+    })
+
+    // Validate WRPRC early if policy is configured
+    let registrationCertificate = try await validateRegistrationCertificateIfNeeded(
+      client: client,
+      verifierInfo: verifierInfo
+    )
+
     return .init(request: .init(
       querySource: querySource,
       clientMetaDataSource: nil,
@@ -140,10 +152,105 @@ internal actor RequestAuthenticator {
       state: requestObject.state,
       vpFormatsSupported: formats.values.isEmpty ? try VpFormatsSupported.default() : formats,
       transactionData: requestObject.transactionData,
-      verifierInfo:  try requestObject.verifierInfo?.map({ json in
-        try VerifierInfo.from(json: json)
-      })
+      verifierInfo: verifierInfo,
+      registrationCertificate: registrationCertificate
     ))
+  }
+
+  /// Validates WRPRC if a RegistrationCertificatePolicy is configured.
+  /// This performs early validation of verifier_info structure, certificate trust, and signature.
+  private func validateRegistrationCertificateIfNeeded(
+    client: Client,
+    verifierInfo: [VerifierInfo]?
+  ) async throws -> WRPRegistrationCertificate? {
+    guard let policy = config.registrationCertificatePolicy else {
+      // No policy configured, skip WRPRC validation
+      return nil
+    }
+
+    // Extract WRPAC (WRP Authentication Certificate) from client
+    guard extractWRPAC(from: client) != nil else {
+      throw ValidationError.validationError(
+        "WRPRC policy is configured but client does not have an authentication certificate (WRPAC)"
+      )
+    }
+
+    // Extract and validate WRPRC from verifier_info
+    guard let verifierInfo = verifierInfo, !verifierInfo.isEmpty else {
+      throw ValidationError.validationError(
+        "WRPRC policy is configured but verifier_info is missing"
+      )
+    }
+
+    // Check for WRPRC entries
+    let wrprcEntries = verifierInfo.filter {
+      $0.format == OpenId4VPSpec.VERIFIER_INFO_FORMAT_WRPRC
+    }
+
+    // Per CIR 2024/2082, only one WRPRC is allowed
+    guard wrprcEntries.count <= 1 else {
+      throw ValidationError.validationError(
+        "Multiple WRPRCs found in verifier_info. Per CIR 2024/2082, only one WRPRC is allowed."
+      )
+    }
+
+    guard let wrprc = try WRPRegistrationCertificate.from(verifierInfo: verifierInfo) else {
+      throw ValidationError.validationError(
+        "WRPRC policy is configured but no WRPRC found in verifier_info"
+      )
+    }
+
+    // Verify WRPRC certificate chain trust
+    let isTrusted = await policy.certificateTrust(wrprc.certificateChain)
+    guard isTrusted else {
+      throw ValidationError.validationError("WRPRC certificate chain is not trusted")
+    }
+
+    // Verify WRPRC JWT signature
+    try verifyWRPRCSignature(wrprc: wrprc)
+
+    return wrprc
+  }
+
+  /// Extracts the WRPAC (authentication certificate) from the client.
+  private func extractWRPAC(from client: Client) -> Certificate? {
+    switch client {
+    case .x509Hash(_, let authenticationCertificate):
+      return authenticationCertificate
+    case .x509SanDns(_, let certificate):
+      return certificate
+    default:
+      return nil
+    }
+  }
+
+  /// Verifies the WRPRC JWT signature using the leaf certificate's public key.
+  private func verifyWRPRCSignature(wrprc: WRPRegistrationCertificate) throws {
+    guard let jws = try? JWS(compactSerialization: wrprc.jwt) else {
+      throw ValidationError.validationError("Invalid WRPRC JWT format")
+    }
+
+    let publicKey = wrprc.certificate.publicKey
+    let pem = try publicKey.serializeAsPEM().pemString
+
+    guard let signingAlgorithm = jws.header.algorithm else {
+      throw ValidationError.validationError("WRPRC JWT header does not contain algorithm field")
+    }
+
+    guard let secKey = KeyController.convertPEMToPublicKey(pem, algorithm: signingAlgorithm) else {
+      throw ValidationError.validationError("Unable to decode public key from WRPRC certificate")
+    }
+
+    let joseController = JOSEController()
+    let verified = (try? joseController.verify(
+      jws: jws,
+      publicKey: secKey,
+      algorithm: signingAlgorithm
+    )) ?? false
+
+    if !verified {
+      throw ValidationError.validationError("WRPRC signature verification failed")
+    }
   }
   
   func parseQuerySource(requestObject: UnvalidatedRequestObject) throws -> QuerySource {

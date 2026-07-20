@@ -184,9 +184,28 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
       )
     }
 
+    // Authorize the request if WRPRC policy is configured
+    let authorizationResult: AuthorizationResult
+    do {
+      authorizationResult = try await authorizeRequest(
+        config: walletConfiguration,
+        resolved: resolved
+      )
+    } catch {
+      return .invalidResolution(
+        error: ValidationError.validationError(error.localizedDescription),
+        dispatchDetails: optionalDispatchDetails(
+          validatedRequestObject: validated,
+          clientMetaData: validatedClientMetaData,
+          config: walletConfiguration
+        )
+      )
+    }
+
     return buildFinalRequest(
       fetchedRequest: fetchedRequest,
-      resolved: resolved
+      resolved: resolved,
+      policyWarnings: authorizationResult.warnings
     )
   }
 
@@ -269,15 +288,24 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
     )
   }
 
+  private func authorizeRequest(
+    config: OpenId4VPConfiguration,
+    resolved: ResolvedRequestData
+  ) async throws -> AuthorizationResult {
+    let authorizer = RequestAuthorizer(policy: config.registrationCertificatePolicy)
+    return try await authorizer.authorize(resolvedRequest: resolved)
+  }
+
   private func buildFinalRequest(
     fetchedRequest: FetchedRequest,
-    resolved: ResolvedRequestData
+    resolved: ResolvedRequestData,
+    policyWarnings: [PolicyViolationWarning] = []
   ) -> AuthorizationRequest {
     switch fetchedRequest {
     case .plain:
-      return .notSecured(data: resolved)
+      return .notSecured(data: resolved, policyWarnings: policyWarnings)
     case .jwtSecured:
-      return .jwt(request: resolved)
+      return .jwt(request: resolved, policyWarnings: policyWarnings)
     }
   }
 }

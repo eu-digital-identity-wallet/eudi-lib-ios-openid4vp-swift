@@ -165,9 +165,7 @@ final class DirectPostTests: DiXCTest {
         .x509SanDns(trust: { _ in
           return true
         }),
-        .x509Hash(trust: { _ in
-          return true
-        })
+        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
@@ -193,7 +191,7 @@ final class DirectPostTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -250,9 +248,7 @@ final class DirectPostTests: DiXCTest {
         .x509SanDns(trust: { _ in
           return true
         }),
-        .x509Hash(trust: { _ in
-          return true
-        })
+        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
@@ -278,7 +274,7 @@ final class DirectPostTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,

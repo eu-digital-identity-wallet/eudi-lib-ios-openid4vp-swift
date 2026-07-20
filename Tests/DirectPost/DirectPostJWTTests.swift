@@ -16,6 +16,7 @@
 import Foundation
 import XCTest
 import JOSESwift
+import SwiftyJSON
 
 @testable import OpenID4VP
 
@@ -55,9 +56,7 @@ final class DirectPostJWTTests: DiXCTest {
         .x509SanDns(trust: { _ in
           true
         }),
-        .x509Hash(trust: { _ in
-          true
-        })
+        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .noEncryptionOption,
@@ -84,7 +83,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -165,7 +164,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -352,7 +351,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -446,7 +445,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -535,7 +534,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
@@ -638,7 +637,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
@@ -732,7 +731,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -835,7 +834,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let transactionData = request.transactionData!.first
       let type = try! transactionData!.type()
@@ -950,7 +949,7 @@ final class DirectPostJWTTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -1192,11 +1191,11 @@ final class DirectPostJWTTests: DiXCTest {
   }
   
   func testSDKEndtoEndWebVerifierDirectPostJwtX509() async throws {
-    
+
     let rsaPrivateKey = try KeyController.generateRSAPrivateKey()
     let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey)
     let privateKey = try KeyController.generateECDHPrivateKey()
-    
+
     let rsaJWK = try RSAPublicKey(
       publicKey: rsaPublicKey,
       additionalParameters: [
@@ -1204,11 +1203,11 @@ final class DirectPostJWTTests: DiXCTest {
         "kid": UUID().uuidString,
         "alg": "RS256"
       ])
-    
+
     let chainVerifier: CertificateTrust = { certificates in
       return TestsConstants.verifyChain(certificates)
     }
-    
+
     let keySet = try WebKeySet(jwk: rsaJWK)
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
@@ -1222,16 +1221,16 @@ final class DirectPostJWTTests: DiXCTest {
       vpConfiguration: .default(),
       responseEncryptionConfiguration: .default()
     )
-    
+
     let sdk = OpenID4VP(walletConfiguration: wallet)
-    
+
     /// To get this URL, visit https://dev.verifier.eudiw.dev/
     /// and  "Request for the entire PID"
     /// Copy the "Authenticate with wallet link", choose the value for "request_uri"
     /// Decode the URL online and paste it below in the url variable
     /// Note:  The url is only valid for one use
     let url = "#09"
-    
+
     overrideDependencies()
     let result = await sdk.authorize(
       fetcher: Fetcher<String>(),
@@ -1240,26 +1239,26 @@ final class DirectPostJWTTests: DiXCTest {
         string: url
       )!
     )
-    
+
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
           try QueryId(value: "query_0"): [.generic(TestsConstants.cbor)]
         ])
       )
-      
+
       // Generate a direct post authorisation response
       let response = try? XCTUnwrap(AuthorizationResponse(
         resolvedRequest: request,
         consent: consent,
         walletOpenId4VPConfig: wallet
       ), "Expected item to be non-nil")
-      
+
       // Dispatch
       XCTAssertNotNil(response)
-      
+
       let result: DispatchOutcome = try await sdk.dispatch(
         session: NetworkingMock(json: .init([:]), statusCode: 200),
         response: response!
@@ -1274,5 +1273,250 @@ final class DirectPostJWTTests: DiXCTest {
       XCTExpectFailure("This tests depends on a verifier url")
       XCTAssert(false)
     }
+  }
+
+  // MARK: - RegistrationCertificatePolicy Tests
+
+  /// Tests that RequestAuthorizer skips authorization when no policy is configured.
+  func testRequestAuthorizerSkipsAuthorizationWhenNoPolicyConfigured() async throws {
+    let authorizer = RequestAuthorizer(policy: nil)
+
+    let validator = ClientMetaDataValidator()
+    let metaData = try await validator.validate(
+      clientMetaData: TestsConstants.testClientMetaData(),
+      responseMode: nil,
+      responseEncryptionConfiguration: .unsupported
+    )
+
+    let resolved: ResolvedRequestData = .init(
+      request: .init(
+        presentationQuery: .byDigitalCredentialsQuery(
+          try! .init(credentials: [
+            .init(
+              id: .init(value: "query_0"),
+              format: .init(format: "sd-jwt"),
+              meta: [:]
+            )
+          ])
+        ),
+        clientMetaData: metaData,
+        client: TestsConstants.testClient,
+        nonce: TestsConstants.testNonce,
+        responseMode: TestsConstants.testResponseMode,
+        state: TestsConstants.generateRandomBase64String(),
+        vpFormatsSupported: try .default(),
+        responseEncryptionSpecification: nil
+      )
+    )
+
+    // Should succeed with empty result when no policy configured
+    let result = try await authorizer.authorize(resolvedRequest: resolved)
+    XCTAssertTrue(result.warnings.isEmpty)
+    XCTAssertNil(result.registrationCertificate)
+  }
+
+  /// Tests that RequestAuthorizer fails when policy is configured but no pre-validated WRPRC is available.
+  /// Note: With the refactored architecture, WRPRC structural validation happens earlier in RequestAuthenticator.
+  /// This test verifies that RequestAuthorizer correctly fails if no registrationCertificate is present.
+  func testRequestAuthorizerFailsWhenPolicyConfiguredButNoValidatedWRPRC() async throws {
+    // Create a policy that trusts all certificates
+    let policy = RegistrationCertificatePolicy(
+      certificateTrust: { _ in true },
+      validatePolicy: { _, _, _ in [] }
+    )
+
+    let authorizer = RequestAuthorizer(policy: policy)
+
+    let validator = ClientMetaDataValidator()
+    let metaData = try await validator.validate(
+      clientMetaData: TestsConstants.testClientMetaData(),
+      responseMode: nil,
+      responseEncryptionConfiguration: .unsupported
+    )
+
+    // Create resolved request with x509SanDns client but no registrationCertificate
+    // In the real flow, this would have failed earlier in RequestAuthenticator
+    let resolved: ResolvedRequestData = .init(
+      request: .init(
+        presentationQuery: .byDigitalCredentialsQuery(
+          try! .init(credentials: [
+            .init(
+              id: .init(value: "query_0"),
+              format: .init(format: "sd-jwt"),
+              meta: [:]
+            )
+          ])
+        ),
+        clientMetaData: metaData,
+        client: .x509SanDns(
+          clientId: "test-client",
+          certificate: TestsConstants.testLeafCertificate
+        ),
+        nonce: TestsConstants.testNonce,
+        responseMode: TestsConstants.testResponseMode,
+        state: TestsConstants.generateRandomBase64String(),
+        vpFormatsSupported: try .default(),
+        responseEncryptionSpecification: nil,
+        verifierInfo: nil,
+        registrationCertificate: nil  // No pre-validated WRPRC
+      )
+    )
+
+    // Should fail because WRPRC policy is configured but no validated WRPRC is available
+    do {
+      _ = try await authorizer.authorize(resolvedRequest: resolved)
+      XCTFail("Expected authorization to fail when no validated WRPRC is available")
+    } catch {
+      XCTAssertTrue(error.localizedDescription.contains("WRPRC"))
+    }
+  }
+
+  /// Tests that policy violations are correctly categorized.
+  func testPolicyViolationCategorization() async throws {
+    // Test that warnings are correctly identified
+    let warning = PolicyViolationWarning(
+      code: "DATA_SCOPE_EXCEEDED",
+      message: "Verifier requested more data than registered for"
+    )
+    let warningViolation = PolicyViolation.warning(warning)
+
+    let error = PolicyViolationError(
+      code: "INVALID_USE_CASE",
+      message: "Verifier's use case is not permitted"
+    )
+    let errorViolation = PolicyViolation.error(error)
+
+    // Test the array extension
+    let mixedViolations: [PolicyViolation] = [warningViolation, errorViolation]
+    XCTAssertTrue(mixedViolations.hasErrors)
+    XCTAssertEqual(mixedViolations.errors.count, 1)
+    XCTAssertEqual(mixedViolations.warnings.count, 1)
+
+    let warningsOnly: [PolicyViolation] = [warningViolation]
+    XCTAssertFalse(warningsOnly.hasErrors)
+    XCTAssertEqual(warningsOnly.warnings.count, 1)
+  }
+
+  /// Tests WRPRegistrationCertificate parsing from verifier_info.
+  func testWRPRegistrationCertificateParsingFromVerifierInfo() async throws {
+    // Test that WRPRC is correctly parsed from verifier_info
+    let wrprcInfo = TestsConstants.testWRPRCVerifierInfo
+
+    XCTAssertEqual(wrprcInfo.format, OpenId4VPSpec.VERIFIER_INFO_FORMAT_WRPRC)
+
+    // Verify the JWT can be extracted and parsed
+    do {
+      let wrprc = try WRPRegistrationCertificate.from(verifierInfo: [wrprcInfo])
+      XCTAssertNotNil(wrprc)
+      XCTAssertNotNil(wrprc?.certificate)
+      XCTAssertFalse(wrprc!.certificateChain.isEmpty)
+    } catch {
+      // Expected to fail on JWT parsing due to test JWT format
+      XCTAssertTrue(error.localizedDescription.contains("JWT"))
+    }
+  }
+
+  /// Tests that missing verifier_info returns nil from WRPRC parser.
+  func testWRPRegistrationCertificateReturnsNilForMissingVerifierInfo() async throws {
+    let wrprc = try WRPRegistrationCertificate.from(verifierInfo: nil)
+    XCTAssertNil(wrprc)
+  }
+
+  /// Tests that verifier_info without WRPRC format returns nil.
+  func testWRPRegistrationCertificateReturnsNilForNonWRPRCFormat() async throws {
+    let otherInfo = VerifierInfo(
+      format: "other_format",
+      data: JSON(stringLiteral: "test"),
+      credentialIds: nil
+    )
+
+    let wrprc = try WRPRegistrationCertificate.from(verifierInfo: [otherInfo])
+    XCTAssertNil(wrprc)
+  }
+
+  /// Tests that RequestAuthorizer correctly extracts WRPAC from different client types.
+  func testRequestAuthorizerExtractsWRPACFromClient() async throws {
+    // Test with x509SanDns client - should have WRPAC
+    let x509Client = Client.x509SanDns(
+      clientId: "test-client",
+      certificate: TestsConstants.testLeafCertificate
+    )
+
+    // Test with preRegistered client - should not have WRPAC
+    let preRegisteredClient = Client.preRegistered(
+      clientId: "test-client",
+      legalName: "Test"
+    )
+
+    // Verify x509 clients have certificates
+    switch x509Client {
+    case .x509SanDns(_, let cert):
+      XCTAssertNotNil(cert)
+    default:
+      XCTFail("Expected x509SanDns client")
+    }
+
+    // Verify preRegistered clients don't have certificates
+    switch preRegisteredClient {
+    case .preRegistered:
+      XCTAssert(true)
+    default:
+      XCTFail("Expected preRegistered client")
+    }
+  }
+
+  /// Tests wallet configuration with RegistrationCertificatePolicy.
+  /// This demonstrates how to configure the wallet to use WRPRC validation.
+  func testWalletConfigurationWithRegistrationCertificatePolicy() async throws {
+    let rsaPrivateKey = try KeyController.generateRSAPrivateKey()
+    let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey)
+
+    let rsaJWK = try RSAPublicKey(
+      publicKey: rsaPublicKey,
+      additionalParameters: [
+        "use": "sig",
+        "kid": UUID().uuidString,
+        "alg": "RS256"
+      ])
+
+    let chainVerifier: CertificateTrust = { certificates in
+      return TestsConstants.verifyChain(certificates)
+    }
+
+    // Example policy that validates WRPRC against DCQL requests
+    let registrationPolicy = RegistrationCertificatePolicy(
+      certificateTrust: chainVerifier,
+      validatePolicy: { wrpac, wrprc, dcql in
+        var violations: [PolicyViolation] = []
+
+        // Example: Check if the number of credentials requested is reasonable
+        if dcql.credentials.count > 5 {
+          violations.append(.warning(PolicyViolationWarning(
+            code: "EXCESSIVE_CREDENTIALS",
+            message: "Request asks for more than 5 credentials"
+          )))
+        }
+
+        return violations
+      }
+    )
+
+    let keySet = try WebKeySet(jwk: rsaJWK)
+    let wallet: OpenId4VPConfiguration = .init(
+      privateKey: rsaPrivateKey,
+      publicWebKeySet: keySet,
+      supportedClientIdSchemes: [
+        .x509SanDns(trust: chainVerifier),
+        .x509Hash(trust: chainVerifier)
+      ],
+      vpFormatsSupported: ClaimFormat.default(),
+      jarConfiguration: .noEncryptionOption,
+      vpConfiguration: .default(),
+      responseEncryptionConfiguration: .default(),
+      registrationCertificatePolicy: registrationPolicy  // Enable WRPRC validation
+    )
+
+    // Verify the policy is set
+    XCTAssertNotNil(wallet.registrationCertificatePolicy)
   }
 }

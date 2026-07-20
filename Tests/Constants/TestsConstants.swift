@@ -18,6 +18,8 @@ import CryptoKit
 import CryptoSwift
 import JOSESwift
 import Security
+import X509
+import SwiftyJSON
 
 @testable import OpenID4VP
 
@@ -399,7 +401,7 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
   }
   
   static func verifyChain(_ certificates: [String]) -> Bool {
-    
+
     let chainVerifier = X509CertificateChainVerifier()
     let roots = try! TestsConstants.loadRootCertificates()
     var result = false
@@ -410,12 +412,59 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
       )
       let r = chainVerifier.isChainTrustResultSuccesful(verified ?? .failure)
       result = result || r
-      
+
       if result {
         break
       }
     }
     return result
+  }
+
+  // MARK: - WRPRC Test Fixtures
+
+  /// A test leaf certificate for WRPRC tests.
+  /// Uses the first certificate from x509CertificateChain.
+  static var testLeafCertificate: Certificate {
+    let base64Cert = x509CertificateChain[0]
+    let certData = Data(base64Encoded: base64Cert)!
+    return try! Certificate(derEncoded: Array(certData))
+  }
+
+  /// Creates a test WRPRC JWT for testing.
+  /// The JWT contains the x5c header with the test certificate chain.
+  static var testWRPRCJwt: String {
+    // Create a simple JWT header with x5c containing our test certificates
+    let header: [String: Any] = [
+      "alg": "ES256",
+      "typ": "JWT",
+      "x5c": x509CertificateChain
+    ]
+
+    let payload: [String: Any] = [
+      "iss": "test-issuer",
+      "sub": "test-subject",
+      "iat": Int(Date().timeIntervalSince1970),
+      "exp": Int(Date().timeIntervalSince1970 + 3600)
+    ]
+
+    let headerData = try! JSONSerialization.data(withJSONObject: header)
+    let payloadData = try! JSONSerialization.data(withJSONObject: payload)
+
+    let headerBase64 = headerData.base64URLEncodedString()
+    let payloadBase64 = payloadData.base64URLEncodedString()
+
+    // For test purposes, we use an unsigned JWT (signature verification is mocked)
+    // In real tests with signature verification, use a properly signed JWT
+    return "\(headerBase64).\(payloadBase64).test_signature"
+  }
+
+  /// A test VerifierInfo containing a WRPRC for testing.
+  static var testWRPRCVerifierInfo: VerifierInfo {
+    VerifierInfo(
+      format: OpenId4VPSpec.VERIFIER_INFO_FORMAT_WRPRC,
+      data: JSON(stringLiteral: testWRPRCJwt),
+      credentialIds: nil
+    )
   }
 }
 

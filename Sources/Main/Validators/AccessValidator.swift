@@ -137,8 +137,8 @@ public actor AccessValidator: AccessValidating {
         throw ValidationError.validationError("Could not trust certificate chain")
       }
     case .x509Hash(let trust):
-      let trust = await trust(chain)
-      if !trust {
+      let trusted = await trust(chain)
+      if !trusted {
         throw ValidationError.validationError("Could not trust certificate chain")
       }
     default: throw ValidationError.validationError("Invalid client id scheme for x509")

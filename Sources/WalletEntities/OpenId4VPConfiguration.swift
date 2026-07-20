@@ -28,6 +28,10 @@ public struct OpenId4VPConfiguration: Sendable {
   public let errorDispatchPolicy: ErrorDispatchPolicy
   public let session: Networking
   public let responseEncryptionConfiguration: ResponseEncryptionConfiguration
+  /// Optional policy for WRP Registration Certificate (WRPRC) validation.
+  /// If provided, WRPRC validation is performed during request authorization.
+  /// If nil, WRPRC validation is skipped.
+  public let registrationCertificatePolicy: RegistrationCertificatePolicy?
   
   public static let SelfIssued = Issuer(string: "https://self-issued.me/v2")
   
@@ -41,7 +45,8 @@ public struct OpenId4VPConfiguration: Sendable {
     vpConfiguration: VPConfiguration = .default(),
     errorDispatchPolicy: ErrorDispatchPolicy = .onlyAuthenticatedClients,
     session: Networking = Self.walletSession,
-    responseEncryptionConfiguration: ResponseEncryptionConfiguration
+    responseEncryptionConfiguration: ResponseEncryptionConfiguration,
+    registrationCertificatePolicy: RegistrationCertificatePolicy? = nil
   ) {
     self.privateKey = privateKey
     self.issuer = issuer
@@ -53,6 +58,7 @@ public struct OpenId4VPConfiguration: Sendable {
     self.errorDispatchPolicy = errorDispatchPolicy
     self.session = session
     self.responseEncryptionConfiguration = responseEncryptionConfiguration
+    self.registrationCertificatePolicy = registrationCertificatePolicy
   }
 
   internal init() throws {
@@ -66,6 +72,7 @@ public struct OpenId4VPConfiguration: Sendable {
     errorDispatchPolicy = .onlyAuthenticatedClients
     session = URLSession.shared
     responseEncryptionConfiguration = .unsupported
+    registrationCertificatePolicy = nil
   }
 
   public static let walletSession: Networking = {

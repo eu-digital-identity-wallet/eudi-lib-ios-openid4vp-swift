@@ -18,10 +18,16 @@ import Foundation
 /// An enumeration representing different types of authorization requests.
 public enum AuthorizationRequest: Sendable {
   /// A not secured authorization request.
-  case notSecured(data: ResolvedRequestData)
+  case notSecured(
+    data: ResolvedRequestData,
+    policyWarnings: [PolicyViolationWarning] = []
+  )
 
   /// A JWT authorization request.
-  case jwt(request: ResolvedRequestData)
+  case jwt(
+    request: ResolvedRequestData,
+    policyWarnings: [PolicyViolationWarning] = []
+  )
 
   /// The resolution was not succesful
   case invalidResolution(
@@ -31,12 +37,24 @@ public enum AuthorizationRequest: Sendable {
 
   public var resolved: ResolvedRequestData? {
     return switch self {
-    case .notSecured(let request):
+    case .notSecured(let request, _):
       request
-    case .jwt(let request):
+    case .jwt(let request, _):
       request
     case .invalidResolution:
       nil
+    }
+  }
+
+  /// Policy warnings from WRPRC validation, if any.
+  public var policyWarnings: [PolicyViolationWarning] {
+    return switch self {
+    case .notSecured(_, let warnings):
+      warnings
+    case .jwt(_, let warnings):
+      warnings
+    case .invalidResolution:
+      []
     }
   }
 }
