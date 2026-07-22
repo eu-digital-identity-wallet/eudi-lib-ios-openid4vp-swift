@@ -67,6 +67,13 @@ public struct WRPRegistrationCertificate: Sendable, Equatable {
       throw ValidationError.validationError("Invalid WRPRC JWT format")
     }
 
+    // Validate JWT type header
+    guard jws.header.typ == OpenId4VPSpec.WRPRC_JWT_TYPE else {
+      throw ValidationError.validationError(
+        "WRPRC JWT header 'typ' must be '\(OpenId4VPSpec.WRPRC_JWT_TYPE)', got '\(jws.header.typ ?? "nil")'"
+      )
+    }
+
     guard let certificateChain: [String] = jws.header.x5c, !certificateChain.isEmpty else {
       throw ValidationError.validationError("WRPRC JWT header missing x5c certificate chain")
     }
