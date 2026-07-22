@@ -724,7 +724,12 @@ final class DirectPostJWTTests: DiXCTest {
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .noEncryptionOption,
       vpConfiguration: .default(),
-      responseEncryptionConfiguration: .default()
+      responseEncryptionConfiguration: .default(),
+      registrationCertificatePolicy: .init(
+        certificateTrust: { _ in return true },
+        validatePolicy: { wrpac, wrprc, dcql in
+          return []
+        })
     )
     
     let sdk = OpenID4VP(walletConfiguration: wallet)
