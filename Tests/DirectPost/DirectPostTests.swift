@@ -283,7 +283,7 @@ final class DirectPostTests: DiXCTest {
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
-        clientID: request.client.id.originalClientId,
+        clientID: request.client.id.clientId,
         nonce: request.nonce,
         useSha3: false
       )

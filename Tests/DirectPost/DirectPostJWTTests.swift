@@ -550,7 +550,7 @@ final class DirectPostJWTTests: DiXCTest {
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
-        clientID: request.client.id.originalClientId,
+        clientID: request.client.id.clientId,
         nonce: TestsConstants.testNonce,
         useSha3: false
       )
@@ -627,7 +627,12 @@ final class DirectPostJWTTests: DiXCTest {
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
       vpConfiguration: .default(),
-      responseEncryptionConfiguration: .default()
+      responseEncryptionConfiguration: .default(),
+      registrationCertificatePolicy: .init(
+        certificateTrust: { _ in return true },
+        validatePolicy: { wrpac, wrprc, dcql in
+          return []
+        })
     )
     
     let sdk = OpenID4VP(walletConfiguration: wallet)
@@ -653,7 +658,7 @@ final class DirectPostJWTTests: DiXCTest {
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
-        clientID: request.client.id.originalClientId,
+        clientID: request.client.id.clientId,
         nonce: request.nonce,
         useSha3: false
       )

@@ -180,7 +180,7 @@ final class DirectPostJWTCertificationAndConformanceTests: DiXCTest {
       let nonce: String? = request.nonce
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
-        clientID: request.client.id.originalClientId,
+        clientID: request.client.id.clientId,
         nonce: nonce!,
         useSha3: false
       )
