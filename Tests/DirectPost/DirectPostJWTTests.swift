@@ -291,7 +291,10 @@ final class DirectPostJWTTests: DiXCTest {
   func testSDKEndtoEndDirectPostJwtPreregistered() async throws {
     
     let nonce = UUID().uuidString
-    let session = try? await TestsHelpers.getDirectPostJwtSession(nonce: nonce)
+    let session = try? await TestsHelpers.getDirectPostJwtSession(
+      nonce: nonce,
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
+    )
     
     guard let session = session else {
       XCTExpectFailure("this tests depends on a local verifier running")
@@ -387,7 +390,10 @@ final class DirectPostJWTTests: DiXCTest {
   func testSDKEndtoEndDirectPostJwtPreregisteredWithInvalidVPToken() async throws {
     
     let nonce = UUID().uuidString
-    let session = try? await TestsHelpers.getDirectPostJwtSession(nonce: nonce)
+    let session = try? await TestsHelpers.getDirectPostJwtSession(
+      nonce: nonce,
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
+    )
     
     guard let session = session else {
       XCTExpectFailure("this tests depends on a local verifier running")
@@ -481,7 +487,8 @@ final class DirectPostJWTTests: DiXCTest {
     let nonce = TestsConstants.testNonce
     let session = try? await TestsHelpers.getDirectPostJwtSession(
       nonce: nonce,
-      format: "dc+sd-jwt"
+      format: "dc+sd-jwt",
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
     )
     
     guard let session = session else {
@@ -679,7 +686,10 @@ final class DirectPostJWTTests: DiXCTest {
   func testSDKEndtoEndDirectPostJwtX509() async throws {
     
     let nonce = UUID().uuidString
-    let session = try? await TestsHelpers.getDirectPostJwtSession(nonce: nonce)
+    let session = try? await TestsHelpers.getDirectPostJwtSession(
+      nonce: nonce,
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
+    )
     
     guard let session = session else {
       XCTExpectFailure("this tests depends on a local verifier running")
@@ -776,7 +786,8 @@ final class DirectPostJWTTests: DiXCTest {
             try .init(value: "query_0")
           ]
         )
-      ]
+      ],
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
     )
     
     guard let session = session else {
@@ -812,7 +823,12 @@ final class DirectPostJWTTests: DiXCTest {
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .noEncryptionOption,
       vpConfiguration: .default(),
-      responseEncryptionConfiguration: .default()
+      responseEncryptionConfiguration: .default(),
+      registrationCertificatePolicy: .init(
+        certificateTrust: { _ in return true },
+        validatePolicy: { wrpac, wrprc, dcql in
+          return []
+        })
     )
     
     let sdk = OpenID4VP(walletConfiguration: wallet)
@@ -898,7 +914,10 @@ final class DirectPostJWTTests: DiXCTest {
   func testSDKEndtoEndDirectPostJwtX509WithRemovedScheme() async throws {
     
     let nonce = UUID().uuidString
-    let session = try? await TestsHelpers.getDirectPostJwtSession(nonce: nonce)
+    let session = try? await TestsHelpers.getDirectPostJwtSession(
+      nonce: nonce,
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
+    )
     
     guard let session = session else {
       XCTExpectFailure("this tests depends on a local verifier running")
@@ -985,7 +1004,10 @@ final class DirectPostJWTTests: DiXCTest {
   func testSDKEndtoEndDirectPostJwtX509WithRemovedSchemeAndExpectedInvalid() async throws {
     
     let nonce = UUID().uuidString
-    let session = try? await TestsHelpers.getDirectPostJwtSession(nonce: nonce)
+    let session = try? await TestsHelpers.getDirectPostJwtSession(
+      nonce: nonce,
+      intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
+    )
     
     guard let session = session else {
       XCTExpectFailure("this tests depends on a local verifier running")
