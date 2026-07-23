@@ -529,7 +529,6 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
     // certificate (WRPRC) belong to the same organization.
     // This prevents a verifier from using another organization's registration.
     let wrpacSubject = wrpac.subject.description
-    let wrprcSubject = wrprc.certificate.subject.description
 
     // Extract organization (O=) from subjects for comparison
     let wrpacOrg = extractOrganization(from: wrpacSubject)
