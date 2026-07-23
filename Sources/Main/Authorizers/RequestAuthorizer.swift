@@ -20,13 +20,13 @@ import X509
 public struct AuthorizationResult: Sendable {
   /// Policy warnings that do not stop processing.
   /// Callers should handle these appropriately (e.g., display to user).
-  public let warnings: [PolicyViolationWarning]
+  public let warnings: [String: [PolicyViolationWarning]]
 
   /// The validated WRPRC if present and valid.
   public let registrationCertificate: WRPRegistrationCertificate?
 
   public init(
-    warnings: [PolicyViolationWarning] = [],
+    warnings: [String: [PolicyViolationWarning]] = [:],
     registrationCertificate: WRPRegistrationCertificate? = nil
   ) {
     self.warnings = warnings
@@ -95,7 +95,8 @@ public actor RequestAuthorizer {
     }
 
     // Apply policy validation - compare WRPRC permissions against DCQL request
-    let violations = await policy.validatePolicy(wrpac, wrprc, dcql)
+    let policyViolations = await policy.validatePolicy(wrpac, wrprc, dcql)
+    let violations = Array(policyViolations.values.flatMap { $0 })
 
     // Check for error-level violations
     if violations.hasErrors {
@@ -103,8 +104,11 @@ public actor RequestAuthorizer {
       throw ValidationError.validationError("WRPRC policy violations: \(errorMessages)")
     }
 
+    let warningsByKey: [String: [PolicyViolationWarning]] = policyViolations.mapValues { $0.warnings
+    }
+    
     return AuthorizationResult(
-      warnings: violations.warnings,
+      warnings: warningsByKey,
       registrationCertificate: wrprc
     )
   }

@@ -505,7 +505,7 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
     wrpac: Certificate,
     wrprc: WRPRegistrationCertificate,
     dcql: DCQL
-  ) -> [PolicyViolation] {
+  ) -> [String: [PolicyViolation]] {
     var violations: [PolicyViolation] = []
 
     // 1. WRPRC VALIDITY PERIOD
@@ -605,7 +605,7 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
       )))
     }
 
-    return violations
+    return ["violations": violations]
   }
 
   /// Helper to extract organization (O=) from a certificate subject/issuer string.

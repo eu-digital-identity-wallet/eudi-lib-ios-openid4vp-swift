@@ -174,7 +174,7 @@ final class DirectPostTests: DiXCTest {
       registrationCertificatePolicy: .init(
         certificateTrust: { _ in return true },
         validatePolicy: { wrpac, wrprc, dcql in
-          return []
+          return [:]
         })
     )
     

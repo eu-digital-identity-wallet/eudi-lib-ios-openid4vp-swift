@@ -65,7 +65,7 @@ final class DirectPostJWTTests: DiXCTest {
       registrationCertificatePolicy: .init(
         certificateTrust: { _ in return true },
         validatePolicy: { wrpac, wrprc, dcql in
-          return []
+          return [:]
         })
     )
     
@@ -631,7 +631,7 @@ final class DirectPostJWTTests: DiXCTest {
       registrationCertificatePolicy: .init(
         certificateTrust: { _ in return true },
         validatePolicy: { wrpac, wrprc, dcql in
-          return []
+          return [:]
         })
     )
     
@@ -738,7 +738,7 @@ final class DirectPostJWTTests: DiXCTest {
       registrationCertificatePolicy: .init(
         certificateTrust: { _ in return true },
         validatePolicy: { wrpac, wrprc, dcql in
-          return []
+          return [:]
         })
     )
     
@@ -842,7 +842,7 @@ final class DirectPostJWTTests: DiXCTest {
       registrationCertificatePolicy: .init(
         certificateTrust: { _ in return true },
         validatePolicy: { wrpac, wrprc, dcql in
-          return []
+          return [:]
         })
     )
     
@@ -1359,7 +1359,7 @@ final class DirectPostJWTTests: DiXCTest {
     // Create a policy that trusts all certificates
     let policy = RegistrationCertificatePolicy(
       certificateTrust: { _ in true },
-      validatePolicy: { _, _, _ in [] }
+      validatePolicy: { _, _, _ in [:] }
     )
 
     let authorizer = RequestAuthorizer(policy: policy)
@@ -1534,7 +1534,7 @@ final class DirectPostJWTTests: DiXCTest {
           )))
         }
 
-        return violations
+        return ["violations": violations]
       }
     )
 

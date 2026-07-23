@@ -34,7 +34,7 @@ public struct RegistrationCertificatePolicy: @unchecked Sendable {
     _ wrpac: Certificate,
     _ wrprc: WRPRegistrationCertificate,
     _ dcql: DCQL
-  ) async -> [PolicyViolation]
+  ) async -> [String: [PolicyViolation]]
 
   public init(
     certificateTrust: @escaping CertificateTrust,
@@ -42,7 +42,7 @@ public struct RegistrationCertificatePolicy: @unchecked Sendable {
       _ wrpac: Certificate,
       _ wrprc: WRPRegistrationCertificate,
       _ dcql: DCQL
-    ) async -> [PolicyViolation]
+    ) async -> [String: [PolicyViolation]]
   ) {
     self.certificateTrust = certificateTrust
     self.validatePolicy = validatePolicy
@@ -60,7 +60,7 @@ public extension RegistrationCertificatePolicy {
   ) -> RegistrationCertificatePolicy {
     RegistrationCertificatePolicy(
       certificateTrust: certificateTrust,
-      validatePolicy: { _, _, _ in [] }
+      validatePolicy: { _, _, _ in [:] }
     )
   }
 }
