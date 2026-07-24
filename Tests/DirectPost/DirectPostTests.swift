@@ -165,14 +165,17 @@ final class DirectPostTests: DiXCTest {
         .x509SanDns(trust: { _ in
           return true
         }),
-        .x509Hash(trust: { _ in
-          return true
-        })
+        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
       vpConfiguration: .default(),
-      responseEncryptionConfiguration: .default()
+      responseEncryptionConfiguration: .default(),
+      registrationCertificatePolicy: .init(
+        certificateTrust: { _ in return true },
+        validatePolicy: { wrpac, wrprc, dcql in
+          return [:]
+        })
     )
     
     let sdk = OpenID4VP(walletConfiguration: wallet)
@@ -193,7 +196,7 @@ final class DirectPostTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(request: let request):
+    case .jwt(let request, _):
       // Obtain consent
       let consent: ClientConsent = .vpToken(
         vpContent: .dcql(verifiablePresentations: [
@@ -250,9 +253,7 @@ final class DirectPostTests: DiXCTest {
         .x509SanDns(trust: { _ in
           return true
         }),
-        .x509Hash(trust: { _ in
-          return true
-        })
+        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
@@ -278,11 +279,11 @@ final class DirectPostTests: DiXCTest {
     )
     
     switch result {
-    case .jwt(let resolved):
+    case .jwt(let resolved, _):
       let request = resolved.request
       let presentation: String? = TestsConstants.sdJwtPresentations(
         transactiondata: request.transactionData,
-        clientID: request.client.id.originalClientId,
+        clientID: request.client.id.clientId,
         nonce: request.nonce,
         useSha3: false
       )

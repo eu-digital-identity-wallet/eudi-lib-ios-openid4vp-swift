@@ -18,6 +18,8 @@ import CryptoKit
 import CryptoSwift
 import JOSESwift
 import Security
+import X509
+import SwiftyJSON
 
 @testable import OpenID4VP
 
@@ -399,7 +401,7 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
   }
   
   static func verifyChain(_ certificates: [String]) -> Bool {
-    
+
     let chainVerifier = X509CertificateChainVerifier()
     let roots = try! TestsConstants.loadRootCertificates()
     var result = false
@@ -410,12 +412,213 @@ d82/03tD1U0Slpjr2098V5XpQMeSveb/elCPCohSBt7tBiaN98zc
       )
       let r = chainVerifier.isChainTrustResultSuccesful(verified ?? .failure)
       result = result || r
-      
+
       if result {
         break
       }
     }
     return result
+  }
+
+  // MARK: - WRPRC Test Fixtures
+
+  /// A test leaf certificate for WRPRC tests.
+  /// Uses the first certificate from x509CertificateChain.
+  static var testLeafCertificate: Certificate {
+    let base64Cert = x509CertificateChain[0]
+    let certData = Data(base64Encoded: base64Cert)!
+    return try! Certificate(derEncoded: Array(certData))
+  }
+
+  /// Creates a test WRPRC JWT for testing.
+  /// The JWT contains the x5c header with the test certificate chain.
+  static var testWRPRCJwt: String {
+    // Create a simple JWT header with x5c containing our test certificates
+    // typ must be "rc-wrp+jwt" per ETSI TS 119 475
+    let header: [String: Any] = [
+      "alg": "ES256",
+      "typ": OpenId4VPSpec.WRPRC_JWT_TYPE,
+      "x5c": x509CertificateChain
+    ]
+
+    let payload: [String: Any] = [
+      "iss": "test-issuer",
+      "sub": "test-subject",
+      "iat": Int(Date().timeIntervalSince1970),
+      "exp": Int(Date().timeIntervalSince1970 + 3600)
+    ]
+
+    let headerData = try! JSONSerialization.data(withJSONObject: header)
+    let payloadData = try! JSONSerialization.data(withJSONObject: payload)
+
+    let headerBase64 = headerData.base64URLEncodedString()
+    let payloadBase64 = payloadData.base64URLEncodedString()
+
+    // For test purposes, we use an unsigned JWT (signature verification is mocked)
+    // In real tests with signature verification, use a properly signed JWT
+    return "\(headerBase64).\(payloadBase64).test_signature"
+  }
+
+  /// A test VerifierInfo containing a WRPRC for testing.
+  static var testWRPRCVerifierInfo: VerifierInfo {
+    VerifierInfo(
+      format: OpenId4VPSpec.VERIFIER_INFO_FORMAT_WRPRC,
+      data: JSON(stringLiteral: testWRPRCJwt),
+      credentialIds: nil
+    )
+  }
+
+  // MARK: - Default Registration Certificate Policy
+
+  /// A default implementation of RegistrationCertificatePolicy for reference.
+  /// This demonstrates the validations a vigilant wallet integrator might perform.
+  ///
+  /// Usage:
+  /// ```swift
+  /// let wallet = OpenId4VPConfiguration(
+  ///   // ... other config ...
+  ///   registrationCertificatePolicy: TestsConstants.defaultRegistrationCertificatePolicy
+  /// )
+  /// ```
+  static var defaultRegistrationCertificatePolicy: RegistrationCertificatePolicy {
+    RegistrationCertificatePolicy(
+      certificateTrust: { certificates in
+        // In production: verify against your trusted WRPRC issuer root certificates
+        // For testing, we use the existing chain verifier
+        return verifyChain(certificates)
+      },
+      validatePolicy: { wrpac, wrprc, dcql in
+        defaultPolicyValidation(wrpac: wrpac, wrprc: wrprc, dcql: dcql)
+      }
+    )
+  }
+
+  /// Default policy validation logic demonstrating best practices.
+  /// Integrators can use this as a reference or extend it with custom checks.
+  ///
+  /// - Parameters:
+  ///   - wrpac: The WRP Authentication Certificate (from request JWT x5c header)
+  ///   - wrprc: The WRP Registration Certificate (from verifier_info)
+  ///   - dcql: The DCQL query specifying what credentials/claims are requested
+  /// - Returns: Array of policy violations (errors stop processing, warnings are informational)
+  static func defaultPolicyValidation(
+    wrpac: Certificate,
+    wrprc: WRPRegistrationCertificate,
+    dcql: DCQL
+  ) -> [String: [PolicyViolation]] {
+    var violations: [PolicyViolation] = []
+
+    // 1. WRPRC VALIDITY PERIOD
+    // Check if the registration certificate is currently valid
+    let now = Date()
+    if now < wrprc.certificate.notValidBefore {
+      violations.append(.error(PolicyViolationError(
+        code: "WRPRC_NOT_YET_VALID",
+        message: "Registration certificate is not yet valid (valid from: \(wrprc.certificate.notValidBefore))"
+      )))
+    }
+    if now > wrprc.certificate.notValidAfter {
+      violations.append(.error(PolicyViolationError(
+        code: "WRPRC_EXPIRED",
+        message: "Registration certificate has expired (expired: \(wrprc.certificate.notValidAfter))"
+      )))
+    }
+
+    // 2. CERTIFICATE BINDING (WRPAC ↔ WRPRC)
+    // Verify that the authentication certificate (WRPAC) and registration
+    // certificate (WRPRC) belong to the same organization.
+    // This prevents a verifier from using another organization's registration.
+    let wrpacSubject = wrpac.subject.description
+
+    // Extract organization (O=) from subjects for comparison
+    let wrpacOrg = extractOrganization(from: wrpacSubject)
+    let wrprcOrg = extractOrganization(from: wrprc.certificate.issuer.description)
+
+    if let wpaOrg = wrpacOrg, let wprOrg = wrprcOrg, wpaOrg != wprOrg {
+      violations.append(.error(PolicyViolationError(
+        code: "CERTIFICATE_ORG_MISMATCH",
+        message: "Authentication certificate organization '\(wpaOrg)' does not match registration certificate issuer '\(wprOrg)'"
+      )))
+    }
+
+    // 3. CREDENTIAL SCOPE VALIDATION
+    // Check that requested credentials are within the WRPRC-permitted scope.
+    // In a real implementation, you would extract permitted credentials from
+    // the WRPRC claims/payload.
+
+    let requestedCredentialCount = dcql.credentials.count
+    if requestedCredentialCount > 10 {
+      violations.append(.warning(PolicyViolationWarning(
+        code: "EXCESSIVE_CREDENTIALS",
+        message: "Request asks for \(requestedCredentialCount) credentials, which exceeds recommended limit"
+      )))
+    }
+
+    // 4. CLAIM/ATTRIBUTE SCOPE VALIDATION
+    // Check specific attributes being requested.
+    // Sensitive attributes might warrant warnings or require specific registration.
+    let sensitiveAttributes = [
+      "birth_date", "age_birth_year",
+      "resident_address", "resident_street",
+      "tax_id", "social_security_number",
+      "biometric_data", "fingerprint"
+    ]
+
+    for credential in dcql.credentials {
+      if let claims = credential.claims {
+        for claim in claims {
+          let claimPath = claim.path.description
+          for sensitive in sensitiveAttributes {
+            if claimPath.lowercased().contains(sensitive) {
+              violations.append(.warning(PolicyViolationWarning(
+                code: "SENSITIVE_ATTRIBUTE_REQUESTED",
+                message: "Sensitive attribute '\(claimPath)' is being requested"
+              )))
+            }
+          }
+        }
+      }
+    }
+
+    // 5. INTENT TO RETAIN CHECK
+    // If credentials specify intent_to_retain, warn the user
+    for credential in dcql.credentials {
+      if let claims = credential.claims {
+        for claim in claims {
+          if claim.intentToRetain == true {
+            let claimPath = claim.path.description
+            violations.append(.warning(PolicyViolationWarning(
+              code: "DATA_RETENTION_REQUESTED",
+              message: "Verifier intends to retain attribute '\(claimPath)'"
+            )))
+          }
+        }
+      }
+    }
+
+    // 6. CERTIFICATE CHAIN LENGTH CHECK
+    // Unusually long certificate chains might indicate issues
+    if wrprc.certificateChain.count > 5 {
+      violations.append(.warning(PolicyViolationWarning(
+        code: "LONG_CERTIFICATE_CHAIN",
+        message: "Registration certificate chain has \(wrprc.certificateChain.count) certificates"
+      )))
+    }
+
+    return ["violations": violations]
+  }
+
+  /// Helper to extract organization (O=) from a certificate subject/issuer string.
+  private static func extractOrganization(from subject: String) -> String? {
+    // Subject format: "CN=...,O=Organization Name,C=..."
+    let components = subject.split(separator: ",")
+    for component in components {
+      let trimmed = component.trimmingCharacters(in: .whitespaces)
+      if trimmed.hasPrefix("O=") {
+        return String(trimmed.dropFirst(2))
+      }
+    }
+    return nil
   }
 }
 

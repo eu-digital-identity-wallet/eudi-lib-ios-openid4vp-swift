@@ -105,7 +105,7 @@ internal actor ClientAuthenticator {
       
       return .x509Hash(
         clientId: verifierId.originalClientId,
-        certificate: certificate
+        authenticationCertificate: certificate
       )
       
     case .x509SanDns:

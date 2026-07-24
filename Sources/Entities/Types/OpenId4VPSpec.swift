@@ -64,4 +64,8 @@ public struct OpenId4VPSpec {
   public static let DCQL_TRUSTED_AUTHORITY_TYPE_AKI: String = "aki"
   public static let DCQL_TRUSTED_AUTHORITY_TYPE_ETSI_TL: String = "etsi_tl"
   public static let DCQL_TRUSTED_AUTHORITY_TYPE_OPENID_FEDERATION: String = "openid_federation"
+
+  // WRPRC (WRP Registration Certificate) constants per ETSI TS 119 475
+  public static let VERIFIER_INFO_FORMAT_WRPRC: String = "registration_cert"
+  public static let WRPRC_JWT_TYPE: String = "rc-wrp+jwt"
 }

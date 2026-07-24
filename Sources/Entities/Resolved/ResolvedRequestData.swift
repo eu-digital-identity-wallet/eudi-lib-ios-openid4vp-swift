@@ -29,6 +29,11 @@ public struct ResolvedRequestData: Sendable {
   public var client: Client {
     return request.client
   }
+
+  /// Pre-validated WRP Registration Certificate (WRPRC) if available.
+  public var registrationCertificate: WRPRegistrationCertificate? {
+    return request.registrationCertificate
+  }
 }
 
 public extension ResolvedRequestData {
@@ -63,7 +68,8 @@ public extension ResolvedRequestData {
       verifierInfo: try VerifierInfo.validatedVerifierInfo(
         request.verifierInfo,
         presentationQuery: presentationQuery
-      )
+      ),
+      registrationCertificate: request.registrationCertificate
     ))
   }
   

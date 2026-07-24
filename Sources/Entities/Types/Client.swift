@@ -34,7 +34,7 @@ public enum Client: Sendable {
 
   case x509Hash(
     clientId: OriginalClientId,
-    certificate: Certificate
+    authenticationCertificate: Certificate
   )
   
   case didClient(
@@ -91,8 +91,8 @@ public enum Client: Sendable {
       return nil
     case .x509SanDns(_, let certificate):
       return certificate.legaName
-    case .x509Hash(_, let certificate):
-      return certificate.legaName
+    case .x509Hash(_, let authenticationCertificate):
+      return authenticationCertificate.legaName
     case .didClient:
       return nil
     case .attested:
