@@ -20,13 +20,13 @@ public enum AuthorizationRequest: Sendable {
   /// A not secured authorization request.
   case notSecured(
     data: ResolvedRequestData,
-    policyWarnings: [String: [PolicyViolationWarning]] = [:]
+    policyWarnings: [String: [PolicyViolation]] = [:]
   )
 
   /// A JWT authorization request.
   case jwt(
     request: ResolvedRequestData,
-    policyWarnings: [String: [PolicyViolationWarning]] = [:]
+    policyWarnings: [String: [PolicyViolation]] = [:]
   )
 
   /// The resolution was not succesful
@@ -47,10 +47,10 @@ public enum AuthorizationRequest: Sendable {
   }
 
   /// Policy warnings from WRPRC validation, if any.
-  public var policyWarnings: [String: [PolicyViolationWarning]] {
+  public var policyWarnings: [String: [PolicyViolation]] {
     return switch self {
-    case .notSecured(_, let warnings):
-      warnings
+    case .notSecured(_, let violations):
+      violations
     case .jwt(_, let warnings):
       warnings
     case .invalidResolution:

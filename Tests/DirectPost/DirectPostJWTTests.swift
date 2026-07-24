@@ -1348,7 +1348,7 @@ final class DirectPostJWTTests: DiXCTest {
 
     // Should succeed with empty result when no policy configured
     let result = try await authorizer.authorize(resolvedRequest: resolved)
-    XCTAssertTrue(result.warnings.isEmpty)
+    XCTAssertTrue(result.violations.isEmpty)
     XCTAssertNil(result.registrationCertificate)
   }
 

@@ -205,7 +205,7 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
     return buildFinalRequest(
       fetchedRequest: fetchedRequest,
       resolved: resolved,
-      policyWarnings: authorizationResult.warnings
+      policyWarnings: authorizationResult.violations
     )
   }
 
@@ -299,7 +299,7 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
   private func buildFinalRequest(
     fetchedRequest: FetchedRequest,
     resolved: ResolvedRequestData,
-    policyWarnings: [String: [PolicyViolationWarning]] = [:]
+    policyWarnings: [String: [PolicyViolation]] = [:]
   ) -> AuthorizationRequest {
     switch fetchedRequest {
     case .plain:
