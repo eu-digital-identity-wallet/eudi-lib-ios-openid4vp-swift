@@ -26,8 +26,12 @@ extension ResolvedRequestData {
     public let vpFormatsSupported: VpFormatsSupported
     public let transactionData: [TransactionData]?
     public let responseEncryptionSpecification: ResponseEncryptionSpecification?
-    
+
     public let verifierInfo: [VerifierInfo]?
+
+    /// Pre-validated WRP Registration Certificate (WRPRC) extracted from verifier_info.
+    /// This is validated during request authentication if a RegistrationCertificatePolicy is configured.
+    public let registrationCertificate: WRPRegistrationCertificate?
 
     /// Initializes a `VpTokenData` instance with the provided parameters.
     ///
@@ -41,6 +45,7 @@ extension ResolvedRequestData {
     ///   - responseEncryptionSpecification: Encryption specification
     ///   - transactionData: Optional list of transcation data
     ///   - verifierInfo: Optional list of verifierInfo
+    ///   - registrationCertificate: Pre-validated WRPRC
     public init(
       presentationQuery: PresentationQuery,
       clientMetaData: ClientMetaData.Validated?,
@@ -51,7 +56,8 @@ extension ResolvedRequestData {
       vpFormatsSupported: VpFormatsSupported,
       responseEncryptionSpecification: ResponseEncryptionSpecification?,
       transactionData: [TransactionData]? = nil,
-      verifierInfo: [VerifierInfo]? = nil
+      verifierInfo: [VerifierInfo]? = nil,
+      registrationCertificate: WRPRegistrationCertificate? = nil
     ) {
       self.presentationQuery = presentationQuery
       self.clientMetaData = clientMetaData
@@ -63,6 +69,7 @@ extension ResolvedRequestData {
       self.transactionData = transactionData
       self.verifierInfo = verifierInfo
       self.responseEncryptionSpecification = responseEncryptionSpecification
+      self.registrationCertificate = registrationCertificate
     }
   }
 }

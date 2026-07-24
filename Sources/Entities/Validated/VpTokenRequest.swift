@@ -29,6 +29,9 @@ extension ValidatedRequestData {
     let vpFormatsSupported: VpFormatsSupported
     let transactionData: [String]?
     let verifierInfo: [VerifierInfo]?
+    /// Pre-validated WRP Registration Certificate (WRPRC) extracted from verifier_info.
+    /// This is validated during request authentication if a RegistrationCertificatePolicy is configured.
+    let registrationCertificate: WRPRegistrationCertificate?
 
     public init(
       querySource: QuerySource,
@@ -41,7 +44,8 @@ extension ValidatedRequestData {
       state: String?,
       vpFormatsSupported: VpFormatsSupported,
       transactionData: [String]?,
-      verifierInfo: [VerifierInfo]?
+      verifierInfo: [VerifierInfo]?,
+      registrationCertificate: WRPRegistrationCertificate? = nil
     ) {
       self.querySource = querySource
       self.clientMetaDataSource = clientMetaDataSource
@@ -54,6 +58,7 @@ extension ValidatedRequestData {
       self.vpFormatsSupported = vpFormatsSupported
       self.transactionData = transactionData
       self.verifierInfo = verifierInfo
+      self.registrationCertificate = registrationCertificate
     }
   }
 }

@@ -39,7 +39,8 @@ class TestsHelpers {
   static func getDirectPostJwtSession(
     nonce: String,
     format: String = "mso_mdoc",
-    transactionData: JSON
+    transactionData: JSON,
+    intendedUseId: String
   ) async throws -> [String: Any] {
 
     // Replace this URL with the endpoint you want to send the POST request to
@@ -55,6 +56,7 @@ class TestsHelpers {
       "response_mode": "direct_post.jwt",
       "nonce": nonce,
       "transaction_data": transactionData,
+      "intended_use_id": intendedUseId,
       "dcql_query": [
         "credentials": [
           [
@@ -78,7 +80,8 @@ class TestsHelpers {
 
   static func getDirectPostJwtSession(
     nonce: String,
-    format: String = "mso_mdoc"
+    format: String = "mso_mdoc",
+    intendedUseId: String
   ) async throws -> [String: Any] {
 
     // Replace this URL with the endpoint you want to send the POST request to
@@ -93,6 +96,7 @@ class TestsHelpers {
       "type": "vp_token",
       "response_mode": "direct_post.jwt",
       "nonce": nonce,
+      "intended_use_id": intendedUseId,
       "dcql_query": [
         "credentials": [
           [
