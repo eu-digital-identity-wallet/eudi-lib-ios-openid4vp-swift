@@ -55,6 +55,7 @@ OpenID Connect for Verifiable Presentations (OIDC4VP) enables the presentation o
 | Transaction Data                                                                                                          | ✅                                                                                                                                      |
 | Verifier Attestation JWT                                                                                                  | ✅                                                                                                                                      |
 | Digital Credential API                                                                                                    | ❌                                                                                                                                      |
+| [Apply WRP Registration Policy](#wrp-authorization-using-wrp-registration-certificate)                                                                                       | ✅                                                                                                                                      |
 
 
 ## Disclaimer
@@ -244,6 +245,43 @@ According to [OpenId4VP](https://openid.net/specs/openid-4-verifiable-presentati
 
 Library currently supports `response_type` equal to `id_token` or `vp_token id_token`
 
+### WRP authorization using WRP Registration Certificate
+
+The library allows the caller to enforce Relying Party Authorization policies based on WRPRC. It can be configured to expect a Registration Certificate (WRPRC) 
+to be provided in the authorization request. By doing so it is expected that the `ResolvedRequestData.VpTokenData.verifierInfo` array includes a WRPRC
+as defined in 472-2 V1.2.1 and CIR 2026/1731 Annex II. 
+
+> [!WARNING]
+> 
+> Authorization policy based on WRPRC is only applicable to `x509_hash` client id scheme.
+
+> [!IMPORTANT]
+> It is **not in the scope** of the library to provide implementations of authorization policies. Only gives the proper means to 
+> hook a policy's application to the proper point of the authorization request resolution flow. 
+
+To configure library to expect a registration certificate a `RegistrationCertificatePolicy` must be provided in `OpenId4VPConfiguration`. If such 
+a policy is provided, and during the request object resolution step, the library will:
+- Extract the registration certificate from the authorization request.
+- Evaluate that the provided registration is signed by a trusted WPRRC Provider (calling `RegistrationCertificatePolicy.certificateTrust`)
+- Evaluate that the provided registration certificate complies with the policy provided (calling `OpenId4VPConfiguration.registrationCertificatePolicy.validatePolicy()`)
+- Include policy violations, if any, in the final resolution  
+
+```swift
+let registrationCertificatePolicy = RegistrationCertificatePolicy(
+      certificateTrust: {
+        ...
+      },
+      validatePolicy: { wrpac, wrprc, dcql in
+        ...
+      })
+    )
+
+let config = OpenId4VPConfiguration(
+    ....
+    registrationCertificatePolicy = policy, 
+    ....    
+)
+```
 
 ## Dependencies
 
