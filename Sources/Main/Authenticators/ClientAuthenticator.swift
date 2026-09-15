@@ -212,7 +212,7 @@ internal actor ClientAuthenticator {
 
     // Determine the response destination
     let responseDestination = responseUri ?? redirectUri
-
+    
     switch scheme {
     case .preregistered(let clients):
       guard let client = clients[clientId] else {
