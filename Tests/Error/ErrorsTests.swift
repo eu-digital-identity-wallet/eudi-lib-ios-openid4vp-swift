@@ -356,13 +356,24 @@ class DispatchOutcomeTests: XCTestCase {
 
   func testInitFromDecoder_rejected() throws {
     let json = """
-    { "rejected": "reason" }
+    { "rejected": true }
     """
     let data = Data(json.utf8)
     let decoder = JSONDecoder()
 
     let outcome = try decoder.decode(DispatchOutcome.self, from: data)
-    XCTAssertEqual(outcome, .rejected(reason: "reason"))
+    XCTAssertEqual(outcome, .rejected(redirectURI: nil))
+  }
+
+  func testInitFromDecoder_rejectedWithRedirectURI() throws {
+    let json = """
+    { "rejected": true, "redirect_uri": "https://www.example.com/callback" }
+    """
+    let data = Data(json.utf8)
+    let decoder = JSONDecoder()
+
+    let outcome = try decoder.decode(DispatchOutcome.self, from: data)
+    XCTAssertEqual(outcome, .rejected(redirectURI: URL(string: "https://www.example.com/callback")))
   }
 
   func testInitFromDecoder_invalid() throws {
@@ -377,6 +388,28 @@ class DispatchOutcomeTests: XCTestCase {
 
   func testEncode() throws {
     let outcome = DispatchOutcome.accepted(redirectURI: URL(string: "https://www.example.com"))
+    let encoder = JSONEncoder()
+
+    let data = try encoder.encode(outcome)
+    let decodedOutcome = try JSONDecoder().decode(DispatchOutcome.self, from: data)
+
+    XCTAssertEqual(decodedOutcome, outcome)
+  }
+
+  func testEncodeRejected() throws {
+    let outcome = DispatchOutcome.rejected(redirectURI: nil)
+    let encoder = JSONEncoder()
+
+    let data = try encoder.encode(outcome)
+    let decodedOutcome = try JSONDecoder().decode(DispatchOutcome.self, from: data)
+
+    XCTAssertEqual(decodedOutcome, outcome)
+  }
+
+  func testEncodeRejectedWithRedirectURI() throws {
+    let outcome = DispatchOutcome.rejected(
+      redirectURI: URL(string: "https://www.example.com/callback")
+    )
     let encoder = JSONEncoder()
 
     let data = try encoder.encode(outcome)

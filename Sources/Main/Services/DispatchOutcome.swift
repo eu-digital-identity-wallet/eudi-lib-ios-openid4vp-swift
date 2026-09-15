@@ -17,11 +17,12 @@ import Foundation
 
 public enum DispatchOutcome: Codable, Equatable, Sendable {
   case accepted(redirectURI: URL?)
-  case rejected(reason: String)
+  case rejected(redirectURI: URL?)
 
   enum CodingKeys: String, CodingKey {
     case accepted
     case rejected
+    case redirectURI = "redirect_uri"
   }
 }
 
@@ -38,8 +39,8 @@ public extension DispatchOutcome {
       let redirectURI = try container.decode(URL?.self, forKey: .accepted)
       self = .accepted(redirectURI: redirectURI)
     } else if container.contains(.rejected) {
-      let reason = try container.decode(String.self, forKey: .rejected)
-      self = .rejected(reason: reason)
+      let redirectURI = try container.decodeIfPresent(URL.self, forKey: .redirectURI)
+      self = .rejected(redirectURI: redirectURI)
     } else {
       throw DecodingError.dataCorruptedError(
           forKey: CodingKeys.accepted,
@@ -55,8 +56,9 @@ public extension DispatchOutcome {
     switch self {
     case .accepted(let redirectURI):
       try container.encode(redirectURI, forKey: .accepted)
-    case .rejected(let reason):
-      try container.encode(reason, forKey: .rejected)
+    case .rejected(let redirectURI):
+      try container.encode(true, forKey: .rejected)
+      try container.encodeIfPresent(redirectURI, forKey: .redirectURI)
     }
   }
 }
