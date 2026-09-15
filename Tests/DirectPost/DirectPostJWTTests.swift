@@ -465,8 +465,8 @@ final class DirectPostJWTTests: DiXCTest {
       
       let result: DispatchOutcome = try await sdk.dispatch(response: response!)
       switch result {
-      case .rejected(let message):
-        XCTAssert(true, message)
+      case .rejected:
+        XCTAssert(true)
         return
       default:
         XCTAssert(false)
