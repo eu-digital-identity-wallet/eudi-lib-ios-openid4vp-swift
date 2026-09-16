@@ -42,7 +42,7 @@ final class VerifierAttestationIssuerTests: XCTestCase {
 
   func testVerifierAttestationHappyPath() async throws {
 
-    let clientId = "client-id"
+    let clientId = "verifier_attestation:client-id"
     let issuer = VerifierAttestationIssuer()
     let verifier = await issuer.verifier!
     let jwt = try await issuer.attestation(
@@ -65,6 +65,8 @@ final class VerifierAttestationIssuerTests: XCTestCase {
     let client = try await authenticator.clientAuthenticator.getClient(
       clientId: clientId,
       jwt: jwt.compactSerializedString,
+      responseUri: URL(string: "https://www.example.com")!,
+      redirectUri: nil,
       config: config
     )
 
@@ -78,7 +80,7 @@ final class VerifierAttestationIssuerTests: XCTestCase {
 
   func testVerifierAttestationInvalidIssuer() async throws {
 
-    let clientId = "client-id"
+    let clientId = "verifier_attestation:client-id"
     var issuer: VerifierAttestationIssuer
 
     issuer = VerifierAttestationIssuer()
@@ -107,6 +109,8 @@ final class VerifierAttestationIssuerTests: XCTestCase {
       _ = try await authenticator.clientAuthenticator.getClient(
         clientId: clientId,
         jwt: jwt.compactSerializedString,
+        responseUri: URL(string: "https://www.example.com")!,
+        redirectUri: nil,
         config: config
       )
 

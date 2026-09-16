@@ -16,21 +16,40 @@
 import Foundation
 import X509
 
-internal func parseCertificates(from chain: [String]) -> [Certificate] {
-  chain.compactMap { serializedCertificate in
+/// Parses all certificates from the x5c chain.
+/// Throws an error if any certificate fails to parse - fail closed to prevent
+/// attacks that inject malformed certificates to manipulate which cert is treated as the leaf.
+internal func parseCertificates(from chain: [String]) throws -> [Certificate] {
+  try chain.enumerated().map { index, serializedCertificate in
     guard let serializedData = Data(base64Encoded: serializedCertificate) else {
-      return nil
+      throw ValidationError.validationError(
+        "Certificate at index \(index) in x5c chain is not valid base64"
+      )
     }
 
     if let string = String(data: serializedData, encoding: .utf8) {
       guard let data = Data(base64Encoded: string.removeCertificateDelimiters()) else {
-        return nil
+        throw ValidationError.validationError(
+          "Certificate at index \(index) in x5c chain has invalid PEM encoding"
+        )
       }
       let derBytes = [UInt8](data)
-      return try? Certificate(derEncoded: derBytes)
+      do {
+        return try Certificate(derEncoded: derBytes)
+      } catch {
+        throw ValidationError.validationError(
+          "Certificate at index \(index) in x5c chain failed to parse: \(error.localizedDescription)"
+        )
+      }
     } else {
       let derBytes = [UInt8](serializedData)
-      return try? Certificate(derEncoded: derBytes)
+      do {
+        return try Certificate(derEncoded: derBytes)
+      } catch {
+        throw ValidationError.validationError(
+          "Certificate at index \(index) in x5c chain failed to parse: \(error.localizedDescription)"
+        )
+      }
     }
   }
 }

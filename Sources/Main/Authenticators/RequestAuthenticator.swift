@@ -83,17 +83,33 @@ internal actor RequestAuthenticator {
   }
   
   func authenticate(fetchRequest: FetchedRequest) async throws -> AuthenticatedRequest {
-    let client = try await clientAuthenticator.authenticate(
-      fetchRequest: fetchRequest
-    )
     switch fetchRequest {
     case .plain(let requestObject):
+      // For plain requests, URIs come from the request object
+      let client = try await clientAuthenticator.authenticate(
+        fetchRequest: fetchRequest,
+        responseUri: requestObject.responseUri.flatMap { URL(string: $0) },
+        redirectUri: requestObject.redirectUri.flatMap { URL(string: $0) }
+      )
       return .init(client: client, requestObject: requestObject)
+
     case .jwtSecured(let clientId, let jwt):
+      // Decode JWT first to extract response_uri/redirect_uri for binding validation
       guard let requestObject = JWTDecoder.decodeJWT(jwt) else {
         throw ValidationError.invalidRequest
       }
 
+      let responseUri = requestObject.responseUri.flatMap { URL(string: $0) }
+      let redirectUri = requestObject.redirectUri.flatMap { URL(string: $0) }
+
+      // Authenticate client with response URI binding validation
+      let client = try await clientAuthenticator.authenticate(
+        fetchRequest: fetchRequest,
+        responseUri: responseUri,
+        redirectUri: redirectUri
+      )
+
+      // Verify JWT signature
       try await verify(
         validator: AccessValidator(
           walletOpenId4VPConfig: config,

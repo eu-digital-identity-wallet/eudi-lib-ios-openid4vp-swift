@@ -30,6 +30,113 @@ import X509
 /// (the bare host) at the construction sites, so the composed id is single-prefixed.
 final class ClientAuthenticatorTests: XCTestCase {
 
+  // MARK: - Unsigned Request Validation Tests
+
+  /// Verifies that unsigned (plain) requests are rejected for preregistered scheme.
+  /// Per OpenID4VP spec, only redirect_uri scheme allows unsigned requests.
+  func testUnsignedRequestRejectedForPreregisteredScheme() async throws {
+    let clientId = "preregistered:trusted-bank"
+
+    let config = Self.makeConfiguration(
+      supportedClientIdSchemes: [
+        .preregistered(clients: [
+          clientId: .init(
+            clientId: clientId,
+            legalName: "Trusted Bank",
+            jarSigningAlg: .init(.RS256),
+            jwkSetSource: .passByValue(webKeys: .init(keys: []))
+          )
+        ])
+      ]
+    )
+
+    let authenticator = ClientAuthenticator(config: config)
+
+    // Create a plain (unsigned) request
+    let plainRequest = UnvalidatedRequestObject(
+      responseType: "vp_token",
+      responseUri: "https://attacker.com/steal",
+      redirectUri: nil,
+      dcqlQuery: nil,
+      request: nil,
+      requestUri: nil,
+      requestUriMethod: nil,
+      clientMetaData: nil,
+      clientId: clientId,
+      clientMetadataUri: nil,
+      clientIdScheme: nil,
+      nonce: "test-nonce",
+      scope: nil,
+      responseMode: "direct_post",
+      state: "test-state",
+      supportedAlgorithm: nil,
+      transactionData: nil,
+      verifierInfo: nil
+    )
+
+    do {
+      _ = try await authenticator.authenticate(
+        fetchRequest: .plain(requestObject: plainRequest),
+        responseUri: URL(string: "https://attacker.com/steal"),
+        redirectUri: nil
+      )
+      XCTFail("Expected unsigned preregistered request to be rejected")
+    } catch {
+      // Expected: unsigned requests must be rejected for preregistered scheme
+      XCTAssertTrue(
+        error.localizedDescription.contains("Unsigned requests are only permitted for redirect_uri scheme"),
+        "Error should indicate unsigned requests are not allowed: \(error)"
+      )
+    }
+  }
+
+  /// Verifies that unsigned requests ARE allowed for redirect_uri scheme when properly bound.
+  func testUnsignedRequestAllowedForRedirectUriScheme() async throws {
+    let responseUri = "https://verifier.example.com/callback"
+    let clientId = "redirect_uri:\(responseUri)"
+
+    let config = Self.makeConfiguration(
+      supportedClientIdSchemes: [
+        .redirectUri
+      ]
+    )
+
+    let authenticator = ClientAuthenticator(config: config)
+
+    // Create a plain (unsigned) request with matching client_id and response_uri
+    let plainRequest = UnvalidatedRequestObject(
+      responseType: "vp_token",
+      responseUri: responseUri,
+      redirectUri: nil,
+      dcqlQuery: nil,
+      request: nil,
+      requestUri: nil,
+      requestUriMethod: nil,
+      clientMetaData: nil,
+      clientId: clientId,
+      clientMetadataUri: nil,
+      clientIdScheme: nil,
+      nonce: "test-nonce",
+      scope: nil,
+      responseMode: "direct_post",
+      state: "test-state",
+      supportedAlgorithm: nil,
+      transactionData: nil,
+      verifierInfo: nil
+    )
+
+    let client = try await authenticator.authenticate(
+      fetchRequest: .plain(requestObject: plainRequest),
+      responseUri: URL(string: responseUri),
+      redirectUri: nil
+    )
+
+    // redirect_uri scheme should succeed for unsigned requests
+    XCTAssertEqual(client.id.originalClientId, responseUri)
+  }
+
+  // MARK: - Doubled Prefix Regression Test
+
   /// Headline regression: a `x509_san_dns:<host>` request resolves to a `Client` whose
   /// composed id carries a single `x509_san_dns:` prefix (not a doubled one), and whose
   /// `originalClientId` is the bare host.
@@ -59,7 +166,9 @@ final class ClientAuthenticatorTests: XCTestCase {
 
     let authenticator = ClientAuthenticator(config: config)
     let client = try await authenticator.authenticate(
-      fetchRequest: .jwtSecured(clientId: clientId, jwt: jwt)
+      fetchRequest: .jwtSecured(clientId: clientId, jwt: jwt),
+      responseUri: URL(string: "https://\(host)/callback")!,
+      redirectUri: nil
     )
 
     // The resolved client must expose the bare host as its original id ...
