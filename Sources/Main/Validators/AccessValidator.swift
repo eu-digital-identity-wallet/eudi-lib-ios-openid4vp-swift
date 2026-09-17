@@ -62,19 +62,14 @@ public actor AccessValidator: AccessValidating {
       throw ValidationError.unsupportedClientIdScheme(nil)
     }
 
-    let supported = walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
+    // No fallback - require exact scheme match
+    guard let scheme = walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
       $0.scheme == clientIdScheme
-    })
-    let scheme = supported ?? walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
-      return switch $0 {
-      case .preregistered: true
-      case .redirectUri: true
-      case .decentralizedIdentifier: true
-      default: false
-      }
-    })
-    
-    switch scheme?.scheme {
+    }) else {
+      throw ValidationError.unsupportedClientIdScheme(clientIdScheme.rawValue)
+    }
+
+    switch scheme.scheme {
     case .preRegistered:
       try await validatePreregistered(
         supportedClientIdScheme: scheme,
@@ -95,9 +90,22 @@ public actor AccessValidator: AccessValidating {
           return alternativeNames ?? []
         }
       )
-    case .redirectUri: break
-    case .decentralizedIdentifier: break
-    default: throw ValidationError.unsupportedClientIdScheme(nil)
+    case .redirectUri:
+      // redirect_uri scheme does NOT permit signed requests (JAR)
+      throw ValidationError.validationError(
+        "redirect_uri client_id scheme does not permit signed authorization requests"
+      )
+    case .decentralizedIdentifier:
+      // Note: DID signature verification is performed in ClientAuthenticator.didPublicKeyLookup()
+      // This case is reached only when the scheme matches, so signature was already verified
+      break
+    case .verifierAttestation:
+      // Note: Verifier attestation signature verification is performed in ClientAuthenticator.verifierAttestation()
+      // This case is reached only when the scheme matches, so signature was already verified
+      break
+    case .openidFederation:
+      // OpenID Federation is not currently implemented
+      throw ValidationError.unsupportedClientIdScheme(ClientIdPrefix.openidFederation.rawValue)
     }
   }
 
@@ -113,7 +121,7 @@ public actor AccessValidator: AccessValidating {
       throw ValidationError.validationError("x5c header field does not contain a serialized leaf certificate")
     }
 
-    let certificates: [Certificate] = parseCertificates(from: chain)
+    let certificates: [Certificate] = try parseCertificates(from: chain)
 
     guard !certificates.isEmpty else {
       throw ValidationError.validationError("x5c header field does not contain a serialized leaf certificate")
@@ -183,11 +191,15 @@ public actor AccessValidator: AccessValidating {
 
     switch supportedClientIdScheme {
     case .preregistered(let clients):
-      guard
-        let key = clients.keys.first,
-        let client = clients[key]
-      else {
-        throw ValidationError.validationError("Client with client_id \(clientId) is not pre-registered")
+      // Parse the client_id to extract the originalClientId (without scheme prefix)
+      guard let verifierId = try? VerifierId.parse(clientId: clientId).get() else {
+        throw ValidationError.validationError("Invalid client_id format: \(clientId)")
+      }
+      // Look up client by the actual client_id from the request
+      guard let client = clients[verifierId.originalClientId] else {
+        throw ValidationError.validationError(
+          "Client with client_id '\(verifierId.originalClientId)' is not pre-registered"
+        )
       }
       try await verifySignature(
         jws: jws,

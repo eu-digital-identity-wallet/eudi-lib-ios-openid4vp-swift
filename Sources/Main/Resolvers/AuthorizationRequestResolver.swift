@@ -103,7 +103,7 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
           error: ValidationError.invalidClientMetadata,
           dispatchDetails: optionalDispatchDetails(
             config: walletConfiguration,
-            fetchedRequest: fetchedRequest
+            requestObject: authorizedRequest.requestObject
           )
         )
       }
@@ -118,7 +118,7 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
         error: ValidationError.invalidClientMetadata,
         dispatchDetails: optionalDispatchDetails(
           config: walletConfiguration,
-          fetchedRequest: fetchedRequest
+          requestObject: authorizedRequest.requestObject
         )
       )
     }
@@ -131,7 +131,7 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
         error: ValidationError.missingResponseType,
         dispatchDetails: optionalDispatchDetails(
           config: walletConfiguration,
-          fetchedRequest: fetchedRequest
+          requestObject: authorizedRequest.requestObject
         )
       )
     }
@@ -141,7 +141,7 @@ public actor AuthorizationRequestResolver: AuthorizationRequestResolving {
         error: ValidationError.missingNonce,
         dispatchDetails: optionalDispatchDetails(
           config: walletConfiguration,
-          fetchedRequest: fetchedRequest
+          requestObject: authorizedRequest.requestObject
         )
       )
     }
@@ -314,6 +314,9 @@ internal extension AuthorizationRequestResolver {
 
   /**
    * Creates an invalid resolution for errors that manifested while trying to authenticate a Client.
+   * For security, this only extracts dispatch details from plain requests.
+   * JWT-secured requests should not have their response_uri extracted before signature verification,
+   * as this could allow attackers to receive error callbacks at attacker-controlled endpoints.
    */
   func optionalDispatchDetails(
     config: OpenId4VPConfiguration,
@@ -325,33 +328,10 @@ internal extension AuthorizationRequestResolver {
         config: config,
         requestObject: requestObject
       )
-    case .jwtSecured(let clientId, let jwt):
-      guard
-        let jws = try? JWS(compactSerialization: jwt),
-        let mode = jws.claimValue(forKey: "response_mode") as? String,
-        let responseUri = jws.claimValue(forKey: "response_uri") as? String,
-        let url = URL(string: responseUri)
-      else {
-        return nil
-      }
-
-      guard let responseMode: ResponseMode = switch mode {
-      case "direct_post":
-        ResponseMode.directPost(responseURI: url)
-      case "direct_post.jwt":
-        ResponseMode.directPostJWT(responseURI: url)
-      default:
-        nil
-      } else {
-        return nil
-      }
-
-      return ErrorDispatchDetails(
-        responseMode: responseMode,
-        nonce: jws.claimValue(forKey: "nonce") as? String,
-        state: jws.claimValue(forKey: "state") as? String,
-        clientId: try? VerifierId.parse(clientId: clientId).get()
-      )
+    case .jwtSecured:
+      // Do not extract response_uri from unverified JWT - this would allow
+      // attackers to receive error callbacks at endpoints they control
+      return nil
     }
   }
 

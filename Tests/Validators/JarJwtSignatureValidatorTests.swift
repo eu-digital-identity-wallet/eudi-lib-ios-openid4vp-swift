@@ -89,7 +89,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
         "typ": "oauth-authz-req+jwt"
       ]),
       payload: try Payload([
-        "client_id": "\(scheme):\(clientId)"
+        "client_id": "\(clientId)"
       ].toThrowingJSONData()),
       signer: Signer(
         signatureAlgorithm: algorithm,
@@ -99,7 +99,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
 
     do {
       try await validator.validate(
-        clientId: "\(scheme):\(clientId)",
+        clientId: "\(clientId)",
         jwt: jws.compactSerializedString
       )
     } catch {
@@ -128,7 +128,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
         "typ": "oauth-authz-req+jwt"
       ]),
       payload: try Payload([
-        "client_id": "\(scheme):\(clientId)"
+        "client_id": "\(clientId)"
       ].toThrowingJSONData()),
       signer: Signer(
         signatureAlgorithm: algorithm,
@@ -137,7 +137,7 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
     )
 
     try await validator.validate(
-      clientId: "\(scheme):\(clientId)",
+      clientId: "\(clientId)",
       jwt: jws.compactSerializedString
     )
 

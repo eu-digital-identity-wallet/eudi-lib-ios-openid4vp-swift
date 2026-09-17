@@ -56,7 +56,8 @@ class VerifierFormPostTests: XCTestCase {
     var expectedRequest = URLRequest(url: url)
     expectedRequest.httpMethod = "POST"
     expectedRequest.httpBody = "param1=value1&param2=123&param3=true".data(using: .utf8)
-
+    expectedRequest.httpShouldHandleCookies = false
+    
     XCTAssertEqual(formPost.urlRequest, expectedRequest)
   }
 
@@ -98,7 +99,8 @@ class VerifierFormPostTests: XCTestCase {
     var expectedRequest = URLRequest(url: url)
     expectedRequest.httpMethod = "POST"
     expectedRequest.httpBody = "param=value".data(using: .utf8)
-
+    expectedRequest.httpShouldHandleCookies = false
+    
     XCTAssertEqual(formPost.urlRequest, expectedRequest)
 
     // Add test cases to cover other scenarios for urlRequest

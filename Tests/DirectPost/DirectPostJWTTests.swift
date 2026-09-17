@@ -292,23 +292,23 @@ final class DirectPostJWTTests: DiXCTest {
     XCTAssertNil(response)
   }
   
-  func testSDKEndtoEndDirectPostJwtPreregistered() async throws {
-    
+  func testSDKEndtoEndDirectPostJwtX509SanDnsBasic() async throws {
+
     let nonce = UUID().uuidString
     let session = try? await TestsHelpers.getDirectPostJwtSession(
       nonce: nonce,
       intendedUseId: try! await TestHelpers.fetchIntendedUse().intendedUseId
     )
-    
+
     guard let session = session else {
       XCTExpectFailure("this tests depends on a local verifier running")
       XCTAssert(false)
       return
     }
-    
+
     let privateKey = try KeyController.generateECDHPrivateKey()
     let publicKey = try KeyController.generateECDHPublicKey(from: privateKey)
-    
+
     let ecJWK = try ECPublicKey(
       publicKey: publicKey,
       additionalParameters: [
@@ -316,31 +316,21 @@ final class DirectPostJWTTests: DiXCTest {
         "kid": UUID().uuidString,
         "alg": "ES256"
       ])
-    
-    let verifiedClient = try! VerifierId.parse(clientId: session["client_id"] as! String).get()
+
     let keySet = try WebKeySet(jwk: ecJWK)
-    let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
-    let fetcher = Fetcher<WebKeySet>()
-    let keys = try await fetcher.fetch(url: publicKeysURL).get()
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
       publicWebKeySet: keySet,
       supportedClientIdSchemes: [
-        .preregistered(clients: [
-          verifiedClient.originalClientId: .init(
-            clientId: TestsConstants.testClientId,
-            legalName: "Verifier",
-            jarSigningAlg: .init(.ES256),
-            jwkSetSource: .passByValue(webKeys: keys)
-          )
-        ])
+        .x509Hash(trust: { _ in true }),
+        .x509SanDns(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .noEncryptionOption,
       vpConfiguration: .default(),
       responseEncryptionConfiguration: .default()
     )
-    
+
     let sdk = OpenID4VP(walletConfiguration: wallet)
     let url = session["request_uri"]
     let clientId = session["client_id"]
