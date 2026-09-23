@@ -62,9 +62,16 @@ public actor AccessValidator: AccessValidating {
       throw ValidationError.unsupportedClientIdScheme(nil)
     }
 
-    // No fallback - require exact scheme match
+    // No fallback for non-preregistered - require exact scheme match
     guard let scheme = walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
       $0.scheme == clientIdScheme
+    }) ?? walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
+      return switch $0 {
+        case .preregistered: true
+        case .redirectUri: true
+        case .decentralizedIdentifier: true
+        default: false
+      }
     }) else {
       throw ValidationError.unsupportedClientIdScheme(clientIdScheme.rawValue)
     }
@@ -191,14 +198,10 @@ public actor AccessValidator: AccessValidating {
 
     switch supportedClientIdScheme {
     case .preregistered(let clients):
-      // Parse the client_id to extract the originalClientId (without scheme prefix)
-      guard let verifierId = try? VerifierId.parse(clientId: clientId).get() else {
-        throw ValidationError.validationError("Invalid client_id format: \(clientId)")
-      }
-      // Look up client by the actual client_id from the request
-      guard let client = clients[verifierId.originalClientId] else {
+      // Look up client from the pre-registered scheme
+      guard let key = clients.keys.first, let client = clients[key] else {
         throw ValidationError.validationError(
-          "Client with client_id '\(verifierId.originalClientId)' is not pre-registered"
+          "preregistered client not found"
         )
       }
       try await verifySignature(

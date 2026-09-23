@@ -77,7 +77,14 @@ internal actor ClientAuthenticator {
       let verifierId = try? VerifierId.parse(clientId: clientId).get(),
       let scheme = config?.supportedClientIdSchemes.first(
         where: { $0.scheme.rawValue == verifierId.scheme.rawValue }
-      )
+      ) ?? config?.supportedClientIdSchemes.first(where: {
+        return switch $0 {
+          case .preregistered: true
+          case .redirectUri: true
+          case .decentralizedIdentifier: true
+          default: false
+        }
+    })
     else {
       throw ValidationError.validationError("Unsupported client_id scheme: no matching scheme configured")
     }
@@ -87,10 +94,10 @@ internal actor ClientAuthenticator {
 
     switch scheme {
     case .preregistered(let clients):
-      // Look up client by the actual client_id from the request (after stripping prefix)
-      guard let client = clients[verifierId.originalClientId] else {
+      // Look up client from the pre-registered scheme
+      guard let key = clients.keys.first, let client = clients[key] else {
         throw ValidationError.validationError(
-          "preregistered client '\(verifierId.originalClientId)' not found"
+          "preregistered client not found"
         )
       }
       // Preregistered clients are explicitly trusted by wallet configuration
@@ -167,10 +174,11 @@ internal actor ClientAuthenticator {
         certificate: certificate
       )
 
-    case .decentralizedIdentifier(let did, let keyLookup):
+    case .decentralizedIdentifier(_, let keyLookup):
+      // Use the client_id from the request, not from configuration
       return try await didPublicKeyLookup(
         jws: try JWS(compactSerialization: jwt),
-        clientId: did.string,
+        clientId: verifierId.originalClientId,
         keyLookup: keyLookup
       )
 
@@ -288,26 +296,38 @@ internal actor ClientAuthenticator {
     clientId: String,
     keyLookup: DIDPublicKeyLookupAgentType
   ) async throws -> Client {
-    
+
     guard let kid = jws.header.kid else {
       throw ValidationError.validationError("kid not found in JWT header")
     }
-    
-    guard
-      let keyUrl = AbsoluteDIDUrl.parse(kid),
-      keyUrl.string.hasPrefix(clientId)
-    else {
-      throw ValidationError.validationError("kid not found in JWT header")
+
+    guard let keyUrl = AbsoluteDIDUrl.parse(kid) else {
+      throw ValidationError.validationError("kid is not a valid DID URL")
     }
-    
+
+    // Parse the client_id as a DID
     guard let clientIdAsDID = DID.parse(clientId) else {
-      throw ValidationError.validationError("Invalid DID")
+      throw ValidationError.validationError("client_id is not a valid DID")
     }
-    
-    guard let publicKey = await keyLookup.resolveKey(from: clientIdAsDID) else {
-      throw ValidationError.validationError("Unable to extract public key from DID")
+
+    // Extract the base DID from the kid URL
+    guard let kidBaseDID = keyUrl.did else {
+      throw ValidationError.validationError("Could not extract base DID from kid")
     }
-    
+
+    // The kid's base DID must exactly match the client_id DID
+    guard kidBaseDID.string == clientIdAsDID.string else {
+      throw ValidationError.validationError(
+        "kid DID '\(kidBaseDID.string)' does not match client_id '\(clientIdAsDID.string)'"
+      )
+    }
+
+    // Pass the full AbsoluteDIDUrl (with fragment) to the lookup agent
+    // so it can resolve the specific verification method
+    guard let publicKey = await keyLookup.resolveKey(from: keyUrl) else {
+      throw ValidationError.validationError("Unable to extract public key from DID URL")
+    }
+
     try jws.verifyJWS(
       publicKey: publicKey
     )

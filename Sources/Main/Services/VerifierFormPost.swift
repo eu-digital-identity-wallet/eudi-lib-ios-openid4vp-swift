@@ -42,6 +42,8 @@ public struct VerifierFormPost: Request {
     request.httpMethod = method.rawValue
     request.httpBody = body
     request.allHTTPHeaderFields = additionalHeaders
+    // Disable cookie handling for privacy - prevent cross-session tracking
+    request.httpShouldHandleCookies = false
     return request
   }
 }

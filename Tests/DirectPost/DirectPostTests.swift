@@ -130,25 +130,25 @@ final class DirectPostTests: DiXCTest {
     XCTAssert(false)
   }
   
-  func testSDKEndtoEndDirectPostVpTokenWithEncryption() async throws {
+  func testSDKEndtoEndDirectPostVpTokenWithPreregistered() async throws {
     
     let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
     let fetcher = Fetcher<WebKeySet>()
     let keys = try await fetcher.fetch(url: publicKeysURL).get()
     
-    let rsaPrivateKey = try KeyController.generateRSAPrivateKey()
-    let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey)
+    let ecPrivateKey = try KeyController.generateECDHPrivateKey()
+    let ecPublicKey = try KeyController.generateECDHPublicKey(from: ecPrivateKey)
     let privateKey = try KeyController.generateECDHPrivateKey()
     
-    let rsaJWK = try RSAPublicKey(
-      publicKey: rsaPublicKey,
+    let ecJWK = try ECPublicKey(
+      publicKey: ecPublicKey,
       additionalParameters: [
         "use": "sig",
         "kid": UUID().uuidString,
-        "alg": "RS256"
+        "alg": "ES256"
       ])
     
-    let keySet = try WebKeySet(jwk: rsaJWK)
+    let keySet = try WebKeySet(jwk: ecJWK)
     
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
@@ -158,23 +158,15 @@ final class DirectPostTests: DiXCTest {
           TestsConstants.testClientId: .init(
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
-            jarSigningAlg: .init(.RS256),
+            jarSigningAlg: .init(.ES256),
             jwkSetSource: .passByValue(webKeys: keys)
           )
         ]),
-        .x509SanDns(trust: { _ in
-          return true
-        }),
-        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
       vpConfiguration: .default(),
-      responseEncryptionConfiguration: .default(),
-      registrationCertificatePolicy: .init(
-        validatePolicy: { wrpac, wrprc, dcql in
-          return .granted()
-        })
+      responseEncryptionConfiguration: .default()
     )
     
     let sdk = OpenID4VP(walletConfiguration: wallet)

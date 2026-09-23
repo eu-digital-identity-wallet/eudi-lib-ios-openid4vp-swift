@@ -70,19 +70,19 @@ public struct OpenId4VPConfiguration: Sendable {
     jarConfiguration = .noEncryptionOption
     vpConfiguration = .default()
     errorDispatchPolicy = .onlyAuthenticatedClients
-    session = URLSession.shared
+    session = Self.walletSession
     responseEncryptionConfiguration = .unsupported
     registrationCertificatePolicy = nil
   }
 
+  /// Creates an ephemeral URLSession with cookies disabled to prevent cross-session tracking.
+  /// This protects wallet privacy by ensuring verifiers cannot use cookies to link
+  /// presentations across sessions or correlate user activity.
   public static let walletSession: Networking = {
-    /*let delegate = SelfSignedSessionDelegate()
-     let configuration = URLSessionConfiguration.default
-     return URLSession(
-     configuration: configuration,
-     delegate: delegate,
-     delegateQueue: nil
-     )*/
-    URLSession.shared
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.httpCookieStorage = nil
+    configuration.httpShouldSetCookies = false
+    configuration.urlCache = nil
+    return URLSession(configuration: configuration)
   }()
 }

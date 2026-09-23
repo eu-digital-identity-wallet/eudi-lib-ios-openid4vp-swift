@@ -18,15 +18,31 @@ import Foundation
 public let DID_URL_SYNTAX = try? NSRegularExpression(pattern: "^did:[a-z0-9]+:(([A-Z.a-z0-9]|-|_|%[0-9A-Fa-f][0-9A-Fa-f])*:)*([A-Z.a-z0-9]|-|_|%[0-9A-Fa-f][0-9A-Fa-f])+(/(([-A-Z._a-z0-9]|~)|%[0-9A-Fa-f][0-9A-Fa-f]|([!$&'()*+,;=])|:|@)*)*(\\?(((([-A-Z._a-z0-9]|~)|%[0-9A-Fa-f][0-9A-Fa-f]|([!$&'()*+,;=])|:|@)|/|\\?)*))?(#(((([-A-Z._a-z0-9]|~)|%[0-9A-Fa-f][0-9A-Fa-f]|([!$&'()*+,;=])|:|@)|/|\\?)*))?$", options: [])
 public let DID_SYNTAX = try? NSRegularExpression(pattern: "^did:[a-z0-9]+:(([A-Z.a-z0-9]|-|_|%[0-9A-Fa-f][0-9A-Fa-f])*:)*([A-Z.a-z0-9]|-|_|%[0-9A-Fa-f][0-9A-Fa-f])+$", options: [])
 
-public struct AbsoluteDIDUrl {
+public struct AbsoluteDIDUrl: Sendable {
   private let uri: URL
 
   private init(uri: URL) {
     self.uri = uri
   }
 
-  var string: String {
+  public var string: String {
     return uri.absoluteString
+  }
+
+  /// Extracts the base DID (without fragment, query, or path) from this DID URL.
+  public var did: DID? {
+    // Remove fragment, query, and path to get the base DID
+    var components = URLComponents(url: uri, resolvingAgainstBaseURL: false)
+    components?.fragment = nil
+    components?.query = nil
+    components?.path = ""
+    guard let baseString = components?.string else { return nil }
+    return DID.parse(baseString)
+  }
+
+  /// The fragment portion of the DID URL (e.g., "key-1" from "did:example:123#key-1")
+  public var fragment: String? {
+    return uri.fragment
   }
 
   public static func parse(_ string: String) -> AbsoluteDIDUrl? {

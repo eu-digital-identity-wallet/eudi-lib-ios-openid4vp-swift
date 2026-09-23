@@ -16,5 +16,10 @@
 import Foundation
 
 public protocol DIDPublicKeyLookupAgentType: Sendable {
-  func resolveKey(from didUrl: DID) async -> SecKey?
+  /// Resolves the public key from the specified DID URL.
+  /// The implementation should use the full DID URL (including fragment) to identify
+  /// the specific verification method to use for key resolution.
+  /// - Parameter didUrl: The full DID URL including the fragment identifying the verification method
+  /// - Returns: The resolved public key, or nil if resolution fails
+  func resolveKey(from didUrl: AbsoluteDIDUrl) async -> SecKey?
 }

@@ -79,11 +79,20 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
   @Injected var reporter: Reporting
   public var session: Networking
 
+  /// Creates an ephemeral URLSession with cookies and cache disabled for privacy.
+  public static var ephemeralSession: URLSession {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.httpCookieStorage = nil
+    configuration.httpShouldSetCookies = false
+    configuration.urlCache = nil
+    return URLSession(configuration: configuration)
+  }
+
   /**
    Initializes a Fetcher instance.
    */
   public init(
-    session: Networking = URLSession.shared
+    session: Networking = Fetcher.ephemeralSession
   ) {
     self.session = session
   }
