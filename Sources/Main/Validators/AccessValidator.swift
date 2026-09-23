@@ -66,10 +66,12 @@ public actor AccessValidator: AccessValidating {
     guard let scheme = walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
       $0.scheme == clientIdScheme
     }) ?? walletOpenId4VPConfig?.supportedClientIdSchemes.first(where: {
-      if case .preregistered = $0 {
-          return true
+      return switch $0 {
+        case .preregistered: true
+        case .redirectUri: true
+        case .decentralizedIdentifier: true
+        default: false
       }
-      return false
     }) else {
       throw ValidationError.unsupportedClientIdScheme(clientIdScheme.rawValue)
     }

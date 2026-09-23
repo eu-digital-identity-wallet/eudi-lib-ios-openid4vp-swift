@@ -78,10 +78,12 @@ internal actor ClientAuthenticator {
       let scheme = config?.supportedClientIdSchemes.first(
         where: { $0.scheme.rawValue == verifierId.scheme.rawValue }
       ) ?? config?.supportedClientIdSchemes.first(where: {
-        if case .preregistered = $0 {
-            return true
+        return switch $0 {
+          case .preregistered: true
+          case .redirectUri: true
+          case .decentralizedIdentifier: true
+          default: false
         }
-        return false
     })
     else {
       throw ValidationError.validationError("Unsupported client_id scheme: no matching scheme configured")
