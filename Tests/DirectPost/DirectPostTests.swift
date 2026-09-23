@@ -130,25 +130,25 @@ final class DirectPostTests: DiXCTest {
     XCTAssert(false)
   }
   
-  func testSDKEndtoEndDirectPostVpTokenWithEncryption() async throws {
+  func testSDKEndtoEndDirectPostVpTokenWithPreregistered() async throws {
     
     let publicKeysURL = URL(string: "\(TestsConstants.host)/wallet/public-keys.json")!
     let fetcher = Fetcher<WebKeySet>()
     let keys = try await fetcher.fetch(url: publicKeysURL).get()
     
-    let rsaPrivateKey = try KeyController.generateRSAPrivateKey()
-    let rsaPublicKey = try KeyController.generateRSAPublicKey(from: rsaPrivateKey)
+    let ecPrivateKey = try KeyController.generateECDHPrivateKey()
+    let ecPublicKey = try KeyController.generateECDHPublicKey(from: ecPrivateKey)
     let privateKey = try KeyController.generateECDHPrivateKey()
     
-    let rsaJWK = try RSAPublicKey(
-      publicKey: rsaPublicKey,
+    let ecJWK = try ECPublicKey(
+      publicKey: ecPublicKey,
       additionalParameters: [
         "use": "sig",
         "kid": UUID().uuidString,
-        "alg": "RS256"
+        "alg": "ES256"
       ])
     
-    let keySet = try WebKeySet(jwk: rsaJWK)
+    let keySet = try WebKeySet(jwk: ecJWK)
     
     let wallet: OpenId4VPConfiguration = .init(
       privateKey: privateKey,
@@ -158,23 +158,15 @@ final class DirectPostTests: DiXCTest {
           TestsConstants.testClientId: .init(
             clientId: TestsConstants.testClientId,
             legalName: "Verifier",
-            jarSigningAlg: .init(.RS256),
+            jarSigningAlg: .init(.ES256),
             jwkSetSource: .passByValue(webKeys: keys)
           )
         ]),
-        .x509SanDns(trust: { _ in
-          return true
-        }),
-        .x509Hash(trust: { _ in true })
       ],
       vpFormatsSupported: ClaimFormat.default(),
       jarConfiguration: .encryptionOption,
       vpConfiguration: .default(),
-      responseEncryptionConfiguration: .default(),
-      registrationCertificatePolicy: .init(
-        validatePolicy: { wrpac, wrprc, dcql in
-          return .granted()
-        })
+      responseEncryptionConfiguration: .default()
     )
     
     let sdk = OpenID4VP(walletConfiguration: wallet)
@@ -183,7 +175,7 @@ final class DirectPostTests: DiXCTest {
     /// Copy the "Authenticate with wallet link", choose the value for "request_uri"
     /// Decode the URL online and paste it below in the url variable
     /// Note:  The url is only valid for one use
-    let url = "#12"
+    let url = "haip-vp://?client_id=x509_hash%3A6_2l_DyVdJDT1a4OGqxSsgTsS_UkW-hZOZT5ADd58J4&request_uri=https%3A%2F%2Fdev.verifier-backend.eudiw.dev%2Fwallet%2Frequest.jwt%2FWpUfvV0snlIFnNbYwEkTHYx6SIhkfnkmNA8oqi8oCXSvxD1zY_N4nTVfa8U85QRlCJUj161bMCw9MoJA4I0TFQ&request_uri_method=get"
     
     overrideDependencies()
     let result = await sdk.authorize(
