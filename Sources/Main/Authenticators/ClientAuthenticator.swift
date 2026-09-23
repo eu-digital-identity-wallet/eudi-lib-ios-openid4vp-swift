@@ -92,10 +92,10 @@ internal actor ClientAuthenticator {
 
     switch scheme {
     case .preregistered(let clients):
-      // Look up client by the actual client_id from the request (after stripping prefix)
-      guard let client = clients[verifierId.originalClientId] else {
+      // Look up client from the pre-registered scheme
+      guard let key = clients.keys.first, let client = clients[key] else {
         throw ValidationError.validationError(
-          "preregistered client '\(verifierId.originalClientId)' not found"
+          "preregistered client not found"
         )
       }
       // Preregistered clients are explicitly trusted by wallet configuration

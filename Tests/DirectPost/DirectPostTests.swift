@@ -175,7 +175,7 @@ final class DirectPostTests: DiXCTest {
     /// Copy the "Authenticate with wallet link", choose the value for "request_uri"
     /// Decode the URL online and paste it below in the url variable
     /// Note:  The url is only valid for one use
-    let url = "haip-vp://?client_id=x509_hash%3A6_2l_DyVdJDT1a4OGqxSsgTsS_UkW-hZOZT5ADd58J4&request_uri=https%3A%2F%2Fdev.verifier-backend.eudiw.dev%2Fwallet%2Frequest.jwt%2FWpUfvV0snlIFnNbYwEkTHYx6SIhkfnkmNA8oqi8oCXSvxD1zY_N4nTVfa8U85QRlCJUj161bMCw9MoJA4I0TFQ&request_uri_method=get"
+    let url = "#12"
     
     overrideDependencies()
     let result = await sdk.authorize(
