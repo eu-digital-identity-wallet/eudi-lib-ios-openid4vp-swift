@@ -87,11 +87,11 @@ internal actor ClientAuthenticator {
 
     switch scheme {
     case .preregistered(let clients):
-      guard
-        let key = clients.keys.first,
-        let client = clients[key]
-      else {
-        throw ValidationError.validationError("preregistered client not found")
+      // Look up client by the actual client_id from the request (after stripping prefix)
+      guard let client = clients[verifierId.originalClientId] else {
+        throw ValidationError.validationError(
+          "preregistered client '\(verifierId.originalClientId)' not found"
+        )
       }
       // Preregistered clients are explicitly trusted by wallet configuration
       return .preRegistered(
@@ -108,7 +108,7 @@ internal actor ClientAuthenticator {
         throw ValidationError.validationError("No certificate in header")
       }
 
-      let certificates: [Certificate] = parseCertificates(from: chain)
+      let certificates: [Certificate] = try parseCertificates(from: chain)
       guard
         let certificate = certificates.first,
         let expectedHash = try? certificate.hashed()
@@ -136,7 +136,7 @@ internal actor ClientAuthenticator {
         throw ValidationError.validationError("No certificate in header")
       }
 
-      let certificates: [Certificate] = parseCertificates(from: chain)
+      let certificates: [Certificate] = try parseCertificates(from: chain)
       guard let certificate = certificates.first else {
         throw ValidationError.validationError("No certificate in chain")
       }

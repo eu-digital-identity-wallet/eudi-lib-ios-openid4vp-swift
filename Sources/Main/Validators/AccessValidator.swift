@@ -121,7 +121,7 @@ public actor AccessValidator: AccessValidating {
       throw ValidationError.validationError("x5c header field does not contain a serialized leaf certificate")
     }
 
-    let certificates: [Certificate] = parseCertificates(from: chain)
+    let certificates: [Certificate] = try parseCertificates(from: chain)
 
     guard !certificates.isEmpty else {
       throw ValidationError.validationError("x5c header field does not contain a serialized leaf certificate")
@@ -191,11 +191,15 @@ public actor AccessValidator: AccessValidating {
 
     switch supportedClientIdScheme {
     case .preregistered(let clients):
-      guard
-        let key = clients.keys.first,
-        let client = clients[key]
-      else {
-        throw ValidationError.validationError("Client with client_id \(clientId) is not pre-registered")
+      // Parse the client_id to extract the originalClientId (without scheme prefix)
+      guard let verifierId = try? VerifierId.parse(clientId: clientId).get() else {
+        throw ValidationError.validationError("Invalid client_id format: \(clientId)")
+      }
+      // Look up client by the actual client_id from the request
+      guard let client = clients[verifierId.originalClientId] else {
+        throw ValidationError.validationError(
+          "Client with client_id '\(verifierId.originalClientId)' is not pre-registered"
+        )
       }
       try await verifySignature(
         jws: jws,
