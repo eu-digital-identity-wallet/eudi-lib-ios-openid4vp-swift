@@ -83,10 +83,10 @@ final class ClientAuthenticatorTests: XCTestCase {
       XCTFail("Expected unsigned preregistered request to be rejected")
     } catch {
       // Expected: unsigned requests must be rejected for preregistered scheme
-      XCTAssertTrue(
-        error.localizedDescription.contains("Unsigned requests are only permitted for redirect_uri scheme"),
-        "Error should indicate unsigned requests are not allowed: \(error)"
-      )
+      guard let error = error as? ValidationError,
+            case let .unsignedRequestNotPermitted(_) = error else {
+        return XCTFail("Expected unsignedRequestNotPermitted, got \(error)")
+      }
     }
   }
 
