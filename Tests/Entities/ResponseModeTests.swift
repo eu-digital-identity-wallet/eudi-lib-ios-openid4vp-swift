@@ -102,4 +102,116 @@ class ResponseModeTests: XCTestCase {
       XCTFail("Expected .query but got nil or another value")
     }
   }
+
+  // MARK: - Tests for rejecting requests with both response_uri and redirect_uri
+
+  func testInitDirectPostWithBothUrisThrowsInvalidRequest() {
+    let json: JSON = [
+      "response_mode": "direct_post",
+      "response_uri": "https://openID4VP.com/callback",
+      "redirect_uri": "https://openID4VP.com/redirect"
+    ]
+
+    XCTAssertThrowsError(try ResponseMode(authorizationRequestObject: json)) { error in
+      guard let validationError = error as? ValidationError else {
+        return XCTFail("Expected ValidationError")
+      }
+      XCTAssertEqual(validationError, .invalidRequest)
+    }
+  }
+
+  func testInitDirectPostJwtWithBothUrisThrowsInvalidRequest() {
+    let json: JSON = [
+      "response_mode": "direct_post.jwt",
+      "response_uri": "https://openID4VP.com/callback",
+      "redirect_uri": "https://openID4VP.com/redirect"
+    ]
+
+    XCTAssertThrowsError(try ResponseMode(authorizationRequestObject: json)) { error in
+      guard let validationError = error as? ValidationError else {
+        return XCTFail("Expected ValidationError")
+      }
+      XCTAssertEqual(validationError, .invalidRequest)
+    }
+  }
+
+  func testInitQueryWithBothUrisThrowsInvalidRequest() {
+    let json: JSON = [
+      "response_mode": "query",
+      "response_uri": "https://openID4VP.com/callback",
+      "redirect_uri": "https://openID4VP.com/redirect"
+    ]
+
+    XCTAssertThrowsError(try ResponseMode(authorizationRequestObject: json)) { error in
+      guard let validationError = error as? ValidationError else {
+        return XCTFail("Expected ValidationError")
+      }
+      XCTAssertEqual(validationError, .invalidRequest)
+    }
+  }
+
+  func testInitFragmentWithBothUrisThrowsInvalidRequest() {
+    let json: JSON = [
+      "response_mode": "fragment",
+      "response_uri": "https://openID4VP.com/callback",
+      "redirect_uri": "https://openID4VP.com/redirect"
+    ]
+
+    XCTAssertThrowsError(try ResponseMode(authorizationRequestObject: json)) { error in
+      guard let validationError = error as? ValidationError else {
+        return XCTFail("Expected ValidationError")
+      }
+      XCTAssertEqual(validationError, .invalidRequest)
+    }
+  }
+
+  func testInitWithUnvalidatedRequestObjectDirectPostWithBothUrisThrowsInvalidRequest() {
+    let data = UnvalidatedRequestObject(
+      responseUri: "https://openID4VP.com/callback",
+      redirectUri: "https://openID4VP.com/redirect",
+      responseMode: "direct_post"
+    )
+
+    XCTAssertThrowsError(try ResponseMode(authorizationRequestData: data)) { error in
+      guard let validationError = error as? ValidationError else {
+        return XCTFail("Expected ValidationError")
+      }
+      XCTAssertEqual(validationError, .invalidRequest)
+    }
+  }
+
+  func testInitWithUnvalidatedRequestObjectQueryWithBothUrisThrowsInvalidRequest() {
+    let data = UnvalidatedRequestObject(
+      responseUri: "https://openID4VP.com/callback",
+      redirectUri: "https://openID4VP.com/redirect",
+      responseMode: "query"
+    )
+
+    XCTAssertThrowsError(try ResponseMode(authorizationRequestData: data)) { error in
+      guard let validationError = error as? ValidationError else {
+        return XCTFail("Expected ValidationError")
+      }
+      XCTAssertEqual(validationError, .invalidRequest)
+    }
+  }
+
+  func testValidatedResponseModeDirectPostWithBothUrisReturnsNil() {
+    let data = UnvalidatedRequestObject(
+      responseUri: "https://openID4VP.com/callback",
+      redirectUri: "https://openID4VP.com/redirect",
+      responseMode: "direct_post"
+    )
+
+    XCTAssertNil(data.validatedResponseMode)
+  }
+
+  func testValidatedResponseModeQueryWithBothUrisReturnsNil() {
+    let data = UnvalidatedRequestObject(
+      responseUri: "https://openID4VP.com/callback",
+      redirectUri: "https://openID4VP.com/redirect",
+      responseMode: "query"
+    )
+
+    XCTAssertNil(data.validatedResponseMode)
+  }
 }

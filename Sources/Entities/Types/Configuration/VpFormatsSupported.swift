@@ -151,6 +151,20 @@ public extension VpFormatSupported {
     }
   }
 
+  /// Returns the format string used in DCQL queries (e.g., "mso_mdoc", "dc+sd-jwt").
+  func formatString() -> String {
+    switch self {
+    case .msoMdoc:
+      return OpenId4VPSpec.FORMAT_MSO_MDOC
+    case .sdJwtVc:
+      return OpenId4VPSpec.FORMAT_SD_JWT_VC
+    case .jwtVp:
+      return OpenId4VPSpec.FORMAT_W3C_SIGNED_JWT
+    case .ldpVp:
+      return "ldp_vp"
+    }
+  }
+
   enum FormatName: String {
     case MSO_MDOC
     case SD_JWT_VC
@@ -214,6 +228,16 @@ public struct VpFormatsSupported: Equatable, Sendable {
 
   func contains(_ format: VpFormatSupported) -> Bool {
     return values.contains(where: { $0 == format })
+  }
+
+  /// Returns the set of format strings supported (e.g., "mso_mdoc", "dc+sd-jwt").
+  public func supportedFormatStrings() -> Set<String> {
+    Set(values.map { $0.formatString() })
+  }
+
+  /// Checks if a given format string is supported.
+  public func supportsFormat(_ formatString: String) -> Bool {
+    supportedFormatStrings().contains(formatString)
   }
 
   public static func common(_ this: VpFormatsSupported, _ that: VpFormatsSupported) -> VpFormatsSupported? {

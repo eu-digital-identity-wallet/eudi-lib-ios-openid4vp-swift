@@ -47,9 +47,22 @@ public extension ResolvedRequestData {
   ) async throws {
 
     let request = validatedAuthorizationRequest.request
-    let commonFormats = VpFormatsSupported.common(request.vpFormatsSupported, vpConfiguration.vpFormatsSupported) ?? request.vpFormatsSupported
+    guard let commonFormats = VpFormatsSupported.common(request.vpFormatsSupported, vpConfiguration.vpFormatsSupported) else {
+      throw ValidationError.invalidFormat
+    }
     let presentationQuery = try await Self.resolvePresentationQuery(
       from: request.querySource
+    )
+
+    // Validate DCQL credential formats against wallet's supported formats
+    if case .byDigitalCredentialsQuery(let dcql) = presentationQuery {
+      try Self.validateDCQLFormats(dcql: dcql, walletFormats: vpConfiguration.vpFormatsSupported)
+    }
+
+    // Validate that DCQL query formats are supported by Verifier's vp_formats_supported
+    try Self.validateDCQLFormatsAgainstVerifier(
+      presentationQuery: presentationQuery,
+      verifierFormatsSupported: validatedClientMetaData.vpFormatsSupported
     )
 
     self = .init(request: .init(
@@ -93,19 +106,49 @@ public extension ResolvedRequestData {
 }
 
 private extension ResolvedRequestData {
-  
+
+  /// Validates that all DCQL credential formats are supported by the wallet.
+  /// Throws `ValidationError.invalidRequest` if any format is unsupported.
+  static func validateDCQLFormats(dcql: DCQL, walletFormats: VpFormatsSupported) throws {
+    let supportedFormatStrings = walletFormats.supportedFormatStrings()
+    let queryFormats = Set(dcql.credentials.map { $0.format.format })
+    let unsupportedFormats = queryFormats.subtracting(supportedFormatStrings)
+
+    guard unsupportedFormats.isEmpty else {
+      throw ValidationError.invalidRequest
+    }
+  }
+
   static func resolvePresentationQuery(
     from source: QuerySource
   ) async throws -> PresentationQuery {
     switch source {
     case .dcqlQuery(let dcql):
       return .byDigitalCredentialsQuery(dcql)
-      
+
     default:
       throw ValidationError.validationError("Query source by scope is not supported for now")
     }
   }
-  
+
+  /// Validates that all formats used in a DCQL query are declared in the Verifier's vp_formats_supported.
+  /// A Verifier that queries for mso_mdoc while advertising only dc+sd-jwt has sent an inconsistent request.
+  static func validateDCQLFormatsAgainstVerifier(
+    presentationQuery: PresentationQuery,
+    verifierFormatsSupported: VpFormatsSupported
+  ) throws {
+    switch presentationQuery {
+    case .byDigitalCredentialsQuery(let dcql):
+      let verifierSupportedStrings = verifierFormatsSupported.supportedFormatStrings()
+      for credential in dcql.credentials {
+        let queryFormat = credential.format.format
+        guard verifierSupportedStrings.contains(queryFormat) else {
+          throw ValidationError.invalidRequest
+        }
+      }
+    }
+  }
+
   static func parseTransactionData(
     transactionData: [String]?,
     vpConfiguration: VPConfiguration,

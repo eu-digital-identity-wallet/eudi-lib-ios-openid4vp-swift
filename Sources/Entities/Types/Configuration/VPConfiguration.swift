@@ -25,8 +25,8 @@ public struct VPConfiguration: Sendable {
       vpFormatsSupported: .init(
         values: [
           .sdJwtVc(
-            sdJwtAlgorithms: [JWSAlgorithm(.ES256)],
-            kbJwtAlgorithms: [JWSAlgorithm(.ES256)]
+            sdJwtAlgorithms: [JWSAlgorithm(.ES256), JWSAlgorithm(.ES384), JWSAlgorithm(.ES512)],
+            kbJwtAlgorithms: [JWSAlgorithm(.ES256), JWSAlgorithm(.ES384), JWSAlgorithm(.ES512)]
           ),
           .msoMdoc(
             issuerAuthAlgorithms: [-7],

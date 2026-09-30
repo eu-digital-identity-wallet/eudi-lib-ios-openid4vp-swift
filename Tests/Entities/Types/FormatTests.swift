@@ -71,4 +71,71 @@ final class FormatTests: XCTestCase {
     let format = try Format.W3CJwtVcJson()
     XCTAssertEqual(format.format, OpenId4VPSpec.FORMAT_W3C_SIGNED_JWT)
   }
+
+  // MARK: - VpFormatSupported format string tests
+
+  func testVpFormatSupportedFormatStringMsoMdoc() {
+    let format = VpFormatSupported.msoMdoc(issuerAuthAlgorithms: nil, deviceAuthAlgorithms: nil)
+    XCTAssertEqual(format.formatString(), "mso_mdoc")
+  }
+
+  func testVpFormatSupportedFormatStringSdJwtVc() {
+    let format = VpFormatSupported.sdJwtVc(sdJwtAlgorithms: [], kbJwtAlgorithms: [])
+    XCTAssertEqual(format.formatString(), "dc+sd-jwt")
+  }
+
+  func testVpFormatSupportedFormatStringJwtVp() {
+    let format = VpFormatSupported.jwtVp(algorithms: [])
+    XCTAssertEqual(format.formatString(), "jwt_vc_json")
+  }
+
+  func testVpFormatSupportedFormatStringLdpVp() {
+    let format = VpFormatSupported.ldpVp(proofTypes: [])
+    XCTAssertEqual(format.formatString(), "ldp_vp")
+  }
+
+  // MARK: - VpFormatsSupported tests
+
+  func testVpFormatsSupportedFormatStrings() throws {
+    let formats = try VpFormatsSupported(values: [
+      .msoMdoc(issuerAuthAlgorithms: nil, deviceAuthAlgorithms: nil),
+      .sdJwtVc(sdJwtAlgorithms: [], kbJwtAlgorithms: [])
+    ])
+
+    let formatStrings = formats.supportedFormatStrings()
+    XCTAssertEqual(formatStrings, Set(["mso_mdoc", "dc+sd-jwt"]))
+  }
+
+  func testVpFormatsSupportedEmptyFormatStrings() throws {
+    let formats = try VpFormatsSupported.empty()
+    let formatStrings = formats.supportedFormatStrings()
+    XCTAssertTrue(formatStrings.isEmpty)
+  }
+
+  func testVpFormatsSupportedCommonReturnsNilWhenNoIntersection() throws {
+    let walletFormats = try VpFormatsSupported(values: [
+      .msoMdoc(issuerAuthAlgorithms: nil, deviceAuthAlgorithms: nil)
+    ])
+    let clientFormats = try VpFormatsSupported(values: [
+      .jwtVp(algorithms: ["ES256"])
+    ])
+
+    let common = VpFormatsSupported.common(clientFormats, walletFormats)
+    XCTAssertNil(common)
+  }
+
+  func testVpFormatsSupportedCommonReturnsIntersection() throws {
+    let walletFormats = try VpFormatsSupported(values: [
+      .msoMdoc(issuerAuthAlgorithms: [-7], deviceAuthAlgorithms: [-7]),
+      .sdJwtVc(sdJwtAlgorithms: [JWSAlgorithm(.ES256)], kbJwtAlgorithms: [])
+    ])
+    let clientFormats = try VpFormatsSupported(values: [
+      .msoMdoc(issuerAuthAlgorithms: [-7], deviceAuthAlgorithms: [-7]),
+      .jwtVp(algorithms: ["ES256"])
+    ])
+
+    let common = VpFormatsSupported.common(clientFormats, walletFormats)
+    XCTAssertNotNil(common)
+    XCTAssertEqual(common?.supportedFormatStrings(), Set(["mso_mdoc"]))
+  }
 }

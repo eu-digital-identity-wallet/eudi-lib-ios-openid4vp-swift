@@ -28,7 +28,9 @@ public struct WebKeySet: Codable, Equatable, Sendable {
     guard let keys = json["keys"].array else {
       throw ValidationError.invalidJWTWebKeySet
     }
-    self.keys = try WebKeySet.transformToKey(keys)
+    let parsedKeys = try WebKeySet.transformToKey(keys)
+    try Self.validateNoDuplicateKids(parsedKeys)
+    self.keys = parsedKeys
   }
 
   public init(_ json: String) throws {
@@ -38,7 +40,20 @@ public struct WebKeySet: Codable, Equatable, Sendable {
     else {
       throw ValidationError.invalidJWTWebKeySet
     }
-    self.keys = try WebKeySet.transformToKey(keys)
+    let parsedKeys = try WebKeySet.transformToKey(keys)
+    try Self.validateNoDuplicateKids(parsedKeys)
+    self.keys = parsedKeys
+  }
+
+  /// Validates that no two keys share the same kid.
+  /// Keys without a kid are not considered duplicates.
+  /// Throws `ValidationError.invalidRequest` if duplicate kids are found.
+  public static func validateNoDuplicateKids(_ keys: [Key]) throws {
+    let kidsWithValues = keys.compactMap { $0.kid }
+    let uniqueKids = Set(kidsWithValues)
+    guard kidsWithValues.count == uniqueKids.count else {
+      throw ValidationError.invalidRequest
+    }
   }
 }
 
@@ -167,14 +182,18 @@ fileprivate extension WebKeySet {
 
 public extension WebKeySet {
   init(jwk: JWK) throws {
-    self.keys = try WebKeySet.transformToKey(
+    let parsedKeys = try WebKeySet.transformToKey(
       [JSON(jwk.toDictionary())]
     )
+    try Self.validateNoDuplicateKids(parsedKeys)
+    self.keys = parsedKeys
   }
 
   init(jwks: [JWK]) throws {
-    self.keys = try WebKeySet.transformToKey(jwks.map {
+    let parsedKeys = try WebKeySet.transformToKey(jwks.map {
       try JSON($0.toDictionary())
     })
+    try Self.validateNoDuplicateKids(parsedKeys)
+    self.keys = parsedKeys
   }
 }

@@ -33,8 +33,14 @@ public enum ResponseMode: Sendable {
       throw ValidationError.missingRequiredField(".responseMode")
     }
 
+    let hasResponseUri = authorizationRequestObject["response_uri"].string != nil
+    let hasRedirectUri = authorizationRequestObject["redirect_uri"].string != nil
+
     switch responseMode {
     case "direct_post":
+      guard !hasRedirectUri else {
+        throw ValidationError.invalidRequest
+      }
       if let responseUri = authorizationRequestObject["response_uri"].string,
          let uri = URL(string: responseUri) {
         self = .directPost(responseURI: uri)
@@ -42,6 +48,9 @@ public enum ResponseMode: Sendable {
         throw ValidationError.missingRequiredField(".responseUri")
       }
     case "direct_post.jwt":
+      guard !hasRedirectUri else {
+        throw ValidationError.invalidRequest
+      }
       if let responseUri = authorizationRequestObject["response_uri"].string,
          let uri = URL(string: responseUri) {
         self = .directPostJWT(responseURI: uri)
@@ -49,6 +58,9 @@ public enum ResponseMode: Sendable {
         throw ValidationError.missingRequiredField(".responseUri")
       }
     case "query":
+      guard !hasResponseUri else {
+        throw ValidationError.invalidRequest
+      }
       if let redirectUri = authorizationRequestObject["redirect_uri"].string,
          let uri = URL(string: redirectUri) {
         self = .query(responseURI: uri)
@@ -56,6 +68,9 @@ public enum ResponseMode: Sendable {
         throw ValidationError.missingRequiredField(".redirectUri")
       }
     case "fragment":
+      guard !hasResponseUri else {
+        throw ValidationError.invalidRequest
+      }
       if let redirectUri = authorizationRequestObject["redirect_uri"].string,
          let uri = URL(string: redirectUri) {
         self = .fragment(responseURI: uri)
@@ -77,8 +92,14 @@ public enum ResponseMode: Sendable {
       throw ValidationError.missingRequiredField(".responseMode")
     }
 
+    let hasResponseUri = authorizationRequestData.responseUri != nil
+    let hasRedirectUri = authorizationRequestData.redirectUri != nil
+
     switch responseMode {
     case "direct_post":
+      guard !hasRedirectUri else {
+        throw ValidationError.invalidRequest
+      }
       if let responseUri = authorizationRequestData.responseUri,
          let uri = URL(string: responseUri) {
         self = .directPost(responseURI: uri)
@@ -86,6 +107,9 @@ public enum ResponseMode: Sendable {
         throw ValidationError.missingRequiredField(".responseUri")
       }
     case "direct_post.jwt":
+      guard !hasRedirectUri else {
+        throw ValidationError.invalidRequest
+      }
       if let responseUri = authorizationRequestData.responseUri,
          let uri = URL(string: responseUri) {
         self = .directPostJWT(responseURI: uri)
@@ -93,6 +117,9 @@ public enum ResponseMode: Sendable {
         throw ValidationError.missingRequiredField(".responseUri")
       }
     case "query":
+      guard !hasResponseUri else {
+        throw ValidationError.invalidRequest
+      }
       if let redirectUri = authorizationRequestData.redirectUri,
          let uri = URL(string: redirectUri) {
         self = .query(responseURI: uri)
@@ -100,6 +127,9 @@ public enum ResponseMode: Sendable {
         throw ValidationError.missingRequiredField(".redirectUri")
       }
     case "fragment":
+      guard !hasResponseUri else {
+        throw ValidationError.invalidRequest
+      }
       if let redirectUri = authorizationRequestData.redirectUri,
          let uri = URL(string: redirectUri) {
         self = .fragment(responseURI: uri)
@@ -142,6 +172,9 @@ internal extension ResponseMode {
 internal extension UnvalidatedRequestObject {
   var validatedResponseMode: ResponseMode? {
 
+    let hasResponseUri = self.responseUri != nil
+    let hasRedirectUri = self.redirectUri != nil
+
     func responseUriURL() -> URL? {
       guard let responseUri = self.responseUri else { return nil }
       return URL(string: responseUri)
@@ -154,12 +187,16 @@ internal extension UnvalidatedRequestObject {
 
     switch self.responseMode {
     case "direct_post":
+      guard !hasRedirectUri else { return nil }
       return responseUriURL().map { .directPost(responseURI: $0) }
     case "direct_post.jwt":
+      guard !hasRedirectUri else { return nil }
       return responseUriURL().map { .directPostJWT(responseURI: $0) }
     case "query":
+      guard !hasResponseUri else { return nil }
       return redirectUriURL().map { .query(responseURI: $0) }
     case nil, "fragment":
+      guard !hasResponseUri else { return nil }
       return redirectUriURL().map { .fragment(responseURI: $0) }
     default:
       return nil

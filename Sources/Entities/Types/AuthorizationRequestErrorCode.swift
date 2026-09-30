@@ -89,6 +89,33 @@ extension AuthorizationRequestErrorCode {
       case .invalidVerifierAttestationCredentialIds:
         return .invalidClient
 
+      // RP Authentication Failures
+      // These indicate the RP cannot be authenticated/trusted
+      case .untrustedCertificateChain:
+        return .invalidClient
+      case .clientIdNotInCertificateSAN:
+        return .invalidClient
+      case .clientIdCertificateHashMismatch:
+        return .invalidClient
+      case .invalidRequestSignature:
+        return .invalidClient
+      case .preregisteredClientNotFound:
+        return .invalidClient
+      case .unsignedRequestNotPermitted:
+        return .invalidClient
+      case .missingCertificateInHeader:
+        return .invalidClient
+      case .invalidDIDUrl:
+        return .invalidClient
+      case .didClientIdMismatch:
+        return .invalidClient
+      case .publicKeyResolutionFailed:
+        return .invalidClient
+      case .responseUriBindingFailed:
+        return .invalidClient
+      case .invalidVerifierAttestation:
+        return .invalidClient
+
       // Request URI errors
       case .invalidRequestUri:
         return .invalidRequestURI

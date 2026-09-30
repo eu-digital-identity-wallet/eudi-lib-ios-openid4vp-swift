@@ -62,6 +62,35 @@ indirect public enum ValidationError: AuthorizationRequestError, Equatable {
   case invalidVerifierAttestationCredentialIds
   case authorizationPolicyNotMet(PolicyViolation)
 
+  // MARK: - RP Authentication Failures
+  // These dedicated cases allow wallets to distinguish "RP cannot be trusted"
+  // from "request is malformed" and display appropriate user-facing messages.
+
+  /// The certificate chain could not be validated or trusted.
+  case untrustedCertificateChain(String)
+  /// The client_id was not found in the certificate's Subject Alternative Names.
+  case clientIdNotInCertificateSAN(clientId: String, certificateSANs: [String])
+  /// The client_id does not match the certificate's SHA-256 hash (x509_hash scheme).
+  case clientIdCertificateHashMismatch(clientId: String, expectedHash: String)
+  /// The request object (JAR) signature is invalid.
+  case invalidRequestSignature(String)
+  /// The pre-registered client was not found in wallet configuration.
+  case preregisteredClientNotFound(clientId: String)
+  /// Unsigned requests are only permitted for redirect_uri scheme.
+  case unsignedRequestNotPermitted(scheme: String)
+  /// No certificate was found in the JWT header (x5c).
+  case missingCertificateInHeader
+  /// The DID URL in the JWT kid header is invalid.
+  case invalidDIDUrl(String)
+  /// The DID in the JWT kid does not match the client_id.
+  case didClientIdMismatch(kidDID: String, clientIdDID: String)
+  /// Unable to resolve the public key from the DID URL.
+  case publicKeyResolutionFailed(String)
+  /// The response_uri/redirect_uri binding validation failed.
+  case responseUriBindingFailed(String)
+  /// The verifier attestation JWT is invalid or cannot be verified.
+  case invalidVerifierAttestation(String)
+
   public var errorDescription: String? {
     switch self {
     case .validationError(let message):
@@ -154,6 +183,32 @@ indirect public enum ValidationError: AuthorizationRequestError, Equatable {
       return ".invalidResponseEncryptionSpecification"
     case .authorizationPolicyNotMet(let violation):
       return ".authorizationPolicyNotMet \(violation.violation)"
+
+    // RP Authentication Failures
+    case .untrustedCertificateChain(let reason):
+      return ".untrustedCertificateChain: \(reason)"
+    case .clientIdNotInCertificateSAN(let clientId, let sans):
+      return ".clientIdNotInCertificateSAN: '\(clientId)' not in \(sans)"
+    case .clientIdCertificateHashMismatch(let clientId, let expectedHash):
+      return ".clientIdCertificateHashMismatch: '\(clientId)' != '\(expectedHash)'"
+    case .invalidRequestSignature(let reason):
+      return ".invalidRequestSignature: \(reason)"
+    case .preregisteredClientNotFound(let clientId):
+      return ".preregisteredClientNotFound: '\(clientId)'"
+    case .unsignedRequestNotPermitted(let scheme):
+      return ".unsignedRequestNotPermitted: scheme '\(scheme)' requires signed JAR"
+    case .missingCertificateInHeader:
+      return ".missingCertificateInHeader"
+    case .invalidDIDUrl(let url):
+      return ".invalidDIDUrl: '\(url)'"
+    case .didClientIdMismatch(let kidDID, let clientIdDID):
+      return ".didClientIdMismatch: kid='\(kidDID)' != client_id='\(clientIdDID)'"
+    case .publicKeyResolutionFailed(let reason):
+      return ".publicKeyResolutionFailed: \(reason)"
+    case .responseUriBindingFailed(let reason):
+      return ".responseUriBindingFailed: \(reason)"
+    case .invalidVerifierAttestation(let reason):
+      return ".invalidVerifierAttestation: \(reason)"
     }
   }
 }
