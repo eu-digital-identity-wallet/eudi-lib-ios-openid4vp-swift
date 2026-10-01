@@ -171,6 +171,52 @@ public extension VpFormatSupported {
     case JWT_VP
     case LDP_VP
   }
+
+  /// Returns the format both sides can use, keeping only the algorithms or proof types they share.
+  /// An empty or missing list does not constrain the other side.
+  /// Returns `nil` when the formats differ or a constrained list has nothing in common.
+  func intersected(with other: VpFormatSupported) -> VpFormatSupported? {
+    switch (self, other) {
+    case let (.sdJwtVc(sdJwt, kbJwt), .sdJwtVc(otherSdJwt, otherKbJwt)):
+      guard
+        let sdJwtAlgorithms = Self.shared(sdJwt, otherSdJwt),
+        let kbJwtAlgorithms = Self.shared(kbJwt, otherKbJwt)
+      else {
+        return nil
+      }
+      return .sdJwtVc(sdJwtAlgorithms: sdJwtAlgorithms, kbJwtAlgorithms: kbJwtAlgorithms)
+
+    case let (.msoMdoc(issuerAuth, deviceAuth), .msoMdoc(otherIssuerAuth, otherDeviceAuth)):
+      guard
+        let issuerAuthAlgorithms = Self.shared(issuerAuth ?? [], otherIssuerAuth ?? []),
+        let deviceAuthAlgorithms = Self.shared(deviceAuth ?? [], otherDeviceAuth ?? [])
+      else {
+        return nil
+      }
+      return .msoMdoc(
+        issuerAuthAlgorithms: issuerAuth == nil && otherIssuerAuth == nil ? nil : issuerAuthAlgorithms,
+        deviceAuthAlgorithms: deviceAuth == nil && otherDeviceAuth == nil ? nil : deviceAuthAlgorithms
+      )
+
+    case let (.jwtVp(algorithms), .jwtVp(otherAlgorithms)):
+      return Self.shared(algorithms, otherAlgorithms).map { .jwtVp(algorithms: $0) }
+
+    case let (.ldpVp(proofTypes), .ldpVp(otherProofTypes)):
+      return Self.shared(proofTypes, otherProofTypes).map { .ldpVp(proofTypes: $0) }
+
+    default:
+      return nil
+    }
+  }
+
+  /// Returns the values both lists allow, in `lhs` order. An empty list does not constrain the other one.
+  /// Returns `nil` when both lists are constrained and share no value.
+  private static func shared<T: Equatable>(_ lhs: [T], _ rhs: [T]) -> [T]? {
+    if lhs.isEmpty { return rhs }
+    if rhs.isEmpty { return lhs }
+    let common = lhs.filter { rhs.contains($0) }
+    return common.isEmpty ? nil : common
+  }
 }
 
 public struct VpFormatsSupported: Equatable, Sendable {
@@ -240,13 +286,13 @@ public struct VpFormatsSupported: Equatable, Sendable {
     supportedFormatStrings().contains(formatString)
   }
 
+  /// Returns the formats both sides support, each narrowed to the algorithms they share,
+  /// or `nil` when there is none.
   public static func common(_ this: VpFormatsSupported, _ that: VpFormatsSupported) -> VpFormatsSupported? {
-    var commonFormats: [VpFormatSupported] = []
-
-    for format in this.values {
-      if that.contains(format) {
-        commonFormats.append(format)
-      }
+    let commonFormats = this.values.compactMap { format in
+      that.values
+        .first { $0.formatName() == format.formatName() }
+        .flatMap { format.intersected(with: $0) }
     }
 
     return commonFormats.isEmpty ?

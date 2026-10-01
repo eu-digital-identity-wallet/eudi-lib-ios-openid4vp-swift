@@ -138,4 +138,50 @@ final class FormatTests: XCTestCase {
     XCTAssertNotNil(common)
     XCTAssertEqual(common?.supportedFormatStrings(), Set(["mso_mdoc"]))
   }
+
+  func testVpFormatsSupportedCommonKeepsSharedAlgorithmsWhenClientSupportsMore() throws {
+    let walletFormats = try VpFormatsSupported.default()
+    let clientFormats = try VpFormatsSupported(values: [
+      .sdJwtVc(
+        sdJwtAlgorithms: [JWSAlgorithm(.ES256), JWSAlgorithm(.ES384), JWSAlgorithm(.ES512)],
+        kbJwtAlgorithms: [JWSAlgorithm(.ES256), JWSAlgorithm(.ES384), JWSAlgorithm(.ES512)]
+      ),
+      .msoMdoc(issuerAuthAlgorithms: [-7, -35, -36], deviceAuthAlgorithms: [-7, -35, -36])
+    ])
+
+    let common = VpFormatsSupported.common(clientFormats, walletFormats)
+    XCTAssertEqual(common, walletFormats)
+  }
+
+  func testVpFormatsSupportedCommonDropsFormatWithoutSharedAlgorithms() throws {
+    let walletFormats = try VpFormatsSupported.default()
+    let clientFormats = try VpFormatsSupported(values: [
+      .sdJwtVc(sdJwtAlgorithms: [JWSAlgorithm(.ES384)], kbJwtAlgorithms: [JWSAlgorithm(.ES384)]),
+      .msoMdoc(issuerAuthAlgorithms: [-7, -35], deviceAuthAlgorithms: [-7])
+    ])
+
+    let common = VpFormatsSupported.common(clientFormats, walletFormats)
+    XCTAssertEqual(common?.values, [.msoMdoc(issuerAuthAlgorithms: [-7], deviceAuthAlgorithms: [-7])])
+  }
+
+  func testVpFormatsSupportedCommonReturnsNilWhenNoAlgorithmIsShared() throws {
+    let walletFormats = try VpFormatsSupported.default()
+    let clientFormats = try VpFormatsSupported(values: [
+      .sdJwtVc(sdJwtAlgorithms: [JWSAlgorithm(.ES384)], kbJwtAlgorithms: [JWSAlgorithm(.ES384)]),
+      .msoMdoc(issuerAuthAlgorithms: [-35], deviceAuthAlgorithms: [-35])
+    ])
+
+    XCTAssertNil(VpFormatsSupported.common(clientFormats, walletFormats))
+  }
+
+  func testVpFormatsSupportedCommonTreatsMissingAlgorithmsAsUnconstrained() throws {
+    let walletFormats = try VpFormatsSupported.default()
+    let clientFormats = try VpFormatsSupported(values: [
+      .sdJwtVc(sdJwtAlgorithms: [], kbJwtAlgorithms: []),
+      .msoMdoc(issuerAuthAlgorithms: nil, deviceAuthAlgorithms: nil)
+    ])
+
+    let common = VpFormatsSupported.common(clientFormats, walletFormats)
+    XCTAssertEqual(common, walletFormats)
+  }
 }
