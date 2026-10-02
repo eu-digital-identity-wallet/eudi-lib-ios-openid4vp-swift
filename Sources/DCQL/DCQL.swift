@@ -297,7 +297,7 @@ public extension CredentialSetQuery {
 public struct ClaimsQuery: Codable, Equatable, Sendable {
   public let id: ClaimId?
   public let path: ClaimPath
-  public let values: [String]?
+  public let values: [DCQLClaimValue]?
   public let intentToRetain: Bool?
   
   enum CodingKeys: String, CodingKey {
@@ -310,7 +310,7 @@ public struct ClaimsQuery: Codable, Equatable, Sendable {
   public init(
     id: ClaimId?,
     path: ClaimPath,
-    values: [String]?,
+    values: [DCQLClaimValue]?,
     intentToRetain: Bool? = nil
   ) {
     self.id = id
@@ -324,7 +324,7 @@ public struct ClaimsQuery: Codable, Equatable, Sendable {
     
     self.id = try container.decodeIfPresent(ClaimId.self, forKey: .id)
     self.path = try container.decode(ClaimPath.self, forKey: .path)
-    self.values = try container.decodeIfPresent([String].self, forKey: .values)
+    self.values = try container.decodeIfPresent([DCQLClaimValue].self, forKey: .values)
     self.intentToRetain = try container.decodeIfPresent(Bool.self, forKey: .intentToRetain)
   }
   
@@ -340,7 +340,7 @@ public struct ClaimsQuery: Codable, Equatable, Sendable {
   public static func sdJwtVc(
     id: ClaimId? = nil,
     path: ClaimPath,
-    values: [String]? = nil
+    values: [DCQLClaimValue]? = nil
   ) throws -> ClaimsQuery {
     try ClaimsQuery(
       id: id,
@@ -351,7 +351,7 @@ public struct ClaimsQuery: Codable, Equatable, Sendable {
   
   public static func mdoc(
     id: ClaimId? = nil,
-    values: [String]? = nil,
+    values: [DCQLClaimValue]? = nil,
     namespace: String,
     claimName: String,
     intentToRetain: Bool? = nil
@@ -366,7 +366,7 @@ public struct ClaimsQuery: Codable, Equatable, Sendable {
   
   public static func mdoc(
     id: ClaimId? = nil,
-    values: [String]? = nil,
+    values: [DCQLClaimValue]? = nil,
     path: ClaimPath,
     intentToRetain: Bool? = nil
   ) throws -> ClaimsQuery {
