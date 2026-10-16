@@ -41,6 +41,16 @@ public struct JARConfiguration: Sendable {
     supportedRequestUriMethods: .encryptionOption
   )
 
+  /// ES256, Request Object encryption offered but not required.
+  public static let encryptionSupportedOption: JARConfiguration = .init(
+    supportedAlgorithms: [
+      JWSAlgorithm(
+        .ES256
+      )
+    ],
+    supportedRequestUriMethods: .encryptionSupportedOption
+  )
+
   public static let noEncryptionOption: JARConfiguration = .init(
     supportedAlgorithms: [
       JWSAlgorithm(
@@ -54,10 +64,7 @@ public struct JARConfiguration: Sendable {
     return switch supportedRequestUriMethods {
     case .get: nil
     case .post(let postOptions), .both(let postOptions):
-      switch postOptions.jarEncryption {
-      case .notRequired: nil
-      case .required(let spec): spec
-      }
+      postOptions.jarEncryption.specification
     }
   }
   
