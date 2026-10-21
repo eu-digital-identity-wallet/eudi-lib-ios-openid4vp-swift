@@ -171,7 +171,7 @@ let dispatchResponse = dispatch.dispatch(response: authorizationResponse)
 
 ```swift
 switch result {
-case .inValidResolution(let error, let details):
+case .invalidResolution(let error, let details):
     let result: DispatchOutcome = try await sdk.dispatch(
         error: error,
         details: details
