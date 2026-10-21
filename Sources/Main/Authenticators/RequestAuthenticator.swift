@@ -177,6 +177,7 @@ internal actor RequestAuthenticator {
   }
 
   /// Extracts WRPRC if a RegistrationCertificatePolicy is configured.
+  /// Returns nil if `verifier_info` has no WRPRC. The policy decides later.
   private func validateRegistrationCertificateIfNeeded(
     client: Client,
     verifierInfo: [VerifierInfo]?
@@ -193,11 +194,9 @@ internal actor RequestAuthenticator {
       )
     }
 
-    // Extract WRPRC from verifier_info
+    // Extract the WRPRC from verifier_info. If there is none, RequestAuthorizer applies the policy.
     guard let verifierInfo = verifierInfo, !verifierInfo.isEmpty else {
-      throw ValidationError.validationError(
-        "WRPRC policy is configured but verifier_info is missing"
-      )
+      return nil
     }
 
     let wrprcEntries = verifierInfo.filter {
@@ -212,9 +211,7 @@ internal actor RequestAuthenticator {
     }
 
     guard let wrprcInfo = wrprcEntries.first else {
-      throw ValidationError.validationError(
-        "WRPRC policy is configured but no WRPRC found in verifier_info"
-      )
+      return nil
     }
 
     guard let rawValue = wrprcInfo.data.string else {
