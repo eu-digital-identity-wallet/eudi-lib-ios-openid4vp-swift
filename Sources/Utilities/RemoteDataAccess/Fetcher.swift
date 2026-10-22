@@ -122,7 +122,6 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
 
       return .success(object)
     } catch let error as FetchError {
-      reporter.debug("error: \(error.localizedDescription)")
       return .failure(error)
     } catch let error as NSError {
       reporter.debug("error: \(error.localizedDescription)")
