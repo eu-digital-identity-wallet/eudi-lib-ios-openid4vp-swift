@@ -43,9 +43,8 @@ public func walletMetaData(
   if let options: PostOptions = config.jarConfiguration.supportedRequestUriMethods.isPostSupported() {
     switch options.jarEncryption {
     case .notRequired: break
-    case .required(
-      let encryptionRequirementSpecification
-    ):
+    case .required(let encryptionRequirementSpecification),
+         .supported(let encryptionRequirementSpecification):
       if let key = key,
          let publicKey = try? KeyController.generateECDHPublicKey(from: key),
          let publicJwk = try? ECPublicKey(

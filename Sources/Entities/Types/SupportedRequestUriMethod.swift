@@ -105,6 +105,22 @@ public enum SupportedRequestUriMethod: Sendable {
     )
   )
 
+  /// POST with wallet metadata and nonce; the Wallet offers Request Object encryption
+  /// but also accepts a signed-only Request Object.
+  public static let encryptionSupportedOption: SupportedRequestUriMethod = .both(
+    postOptions: try! PostOptions(
+      includeWalletMetadata: true,
+      useWalletNonce: NonceOption.use(byteLength: 32),
+      jarEncryption: .supported(
+        encryptionRequirementSpecification: .init(
+          supportedEncryptionAlgorithm: .ECDH_ES,
+          supportedEncryptionMethod: .A128GCM,
+          ephemeralEncryptionKeyCurve: .P256
+        )
+      )
+    )
+  )
+
   public static let noEncryptionOption: SupportedRequestUriMethod = .both(
     postOptions: try! PostOptions(
       includeWalletMetadata: true,
