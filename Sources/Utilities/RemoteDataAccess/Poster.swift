@@ -19,6 +19,7 @@ public enum PostError: Error {
   case invalidUrl
   case invalidResponse
   case networkError(Error)
+  case invalidStatusCode(URL?, Int, Data?)
   
   /**
    Provides a localized description of the post error.
@@ -33,6 +34,8 @@ public enum PostError: Error {
       return "Invalid URL"
     case .networkError(let error):
       return "Network Error: \(error.localizedDescription)"
+    case .invalidStatusCode(let url, let code, _):
+      return "Invalid status code \(code) \(url?.absoluteString ?? "-")"
     }
   }
 }
@@ -142,7 +145,7 @@ public struct Poster: Posting {
       let (data, response) = try await self.session.data(for: request)
       let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
       if !statusCode.isWithinRange(200...299) {
-        return .failure(.invalidResponse)
+        return .failure(.invalidStatusCode(request.url, statusCode, data))
       }
       
       if let string = String(data: data, encoding: .utf8) {

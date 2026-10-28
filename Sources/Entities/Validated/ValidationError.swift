@@ -90,6 +90,7 @@ indirect public enum ValidationError: AuthorizationRequestError, Equatable {
   case responseUriBindingFailed(String)
   /// The verifier attestation JWT is invalid or cannot be verified.
   case invalidVerifierAttestation(String)
+  case networkError(NetworkFailure)
 
   public var errorDescription: String? {
     switch self {
@@ -209,6 +210,13 @@ indirect public enum ValidationError: AuthorizationRequestError, Equatable {
       return ".responseUriBindingFailed: \(reason)"
     case .invalidVerifierAttestation(let reason):
       return ".invalidVerifierAttestation: \(reason)"
+
+    // Network Failures
+    case .networkError(let failure):
+      let cause = failure.statusCode.map { "status \($0)" }
+        ?? failure.underlying?.localizedDescription
+        ?? "unknown"
+      return ".networkError \(failure.stage) \(failure.url?.absoluteString ?? "-"): \(cause)"
     }
   }
 }

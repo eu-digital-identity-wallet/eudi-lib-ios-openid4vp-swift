@@ -20,7 +20,7 @@ public enum FetchError: LocalizedError {
   case networkError(Error)
   case invalidResponse
   case decodingError(Error)
-  case invalidStatusCode(URL, Int)
+  case invalidStatusCode(URL, Int, Data?)
 
   /**
    Provides a localized description of the fetch error.
@@ -37,7 +37,7 @@ public enum FetchError: LocalizedError {
       return ".invalidResponse"
     case .decodingError(let error):
       return ".decodingError \(error.localizedDescription)"
-    case .invalidStatusCode(let code, let url):
+    case .invalidStatusCode(let url, let code, _):
       return ".invalidStatusCode \(code) \(url)"
     }
   }
@@ -112,7 +112,7 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
       let (data, response) = try await self.session.data(from: url)
       let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
       if !statusCode.isWithinRange(200...299) {
-        throw FetchError.invalidStatusCode(url, statusCode)
+        throw FetchError.invalidStatusCode(url, statusCode, data)
       }
       let object = try JSONDecoder().decode(Element.self, from: data)
 
@@ -121,6 +121,8 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
       }
 
       return .success(object)
+    } catch let error as FetchError {
+      return .failure(error)
     } catch let error as NSError {
       reporter.debug("error: \(error.localizedDescription)")
       if error.domain == NSURLErrorDomain {
@@ -141,7 +143,7 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
       let (data, response) = try await self.session.data(from: url)
       let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
       if !statusCode.isWithinRange(200...299) {
-        throw FetchError.invalidStatusCode(url, statusCode)
+        throw FetchError.invalidStatusCode(url, statusCode, data)
       }
 
       if let string = String(data: data, encoding: .utf8) {
@@ -157,6 +159,8 @@ public struct Fetcher<Element: Codable & Sendable>: Fetching {
 
         return .failure(.decodingError(error))
       }
+    } catch let error as FetchError {
+      throw error
     } catch {
       throw FetchError.networkError(error)
     }
