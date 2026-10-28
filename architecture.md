@@ -244,6 +244,7 @@ flowchart TD
         VE[ValidationError]
         AE[AuthorizationError]
         RAE[ResolvedAuthorisationError]
+        NF[NetworkFailure]
     end
 
     subgraph Policy["Dispatch Policy"]
@@ -264,6 +265,7 @@ flowchart TD
         REJ[rejected]
     end
 
+    VE --> NF
     VE --> EDP
     AE --> EDP
     RAE --> EDP

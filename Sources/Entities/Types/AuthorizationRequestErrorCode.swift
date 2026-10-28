@@ -150,6 +150,10 @@ extension AuthorizationRequestErrorCode {
       case .nonDispatchable:
         return .processingFailure
 
+      // Network failures while fetching the request object mapped like the generic validation error.
+      case .networkError:
+        return .invalidRequest
+
       // All other validation errors map to invalid_request
       case .validationError,
            .unsupportedResponseType,

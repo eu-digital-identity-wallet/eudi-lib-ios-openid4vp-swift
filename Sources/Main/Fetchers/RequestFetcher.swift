@@ -132,11 +132,19 @@ internal actor RequestFetcher {
     fetcher: any Fetching,
     requestUrl: URL
   ) async throws -> String {
-    let jwtResult = try await fetcher.fetchString(url: requestUrl)
+    let jwtResult: Result<String, FetchError>
+    do {
+      jwtResult = try await fetcher.fetchString(url: requestUrl)
+    } catch let error as FetchError {
+      throw ValidationError.networkError(.init(stage: .GET, url: requestUrl, fetchError: error))
+    }
     switch jwtResult {
     case .success(let string):
       return try extractJWT(string)
-    case .failure: throw ValidationError.invalidJwtPayload
+    case .failure(.decodingError):
+      throw ValidationError.invalidJwtPayload
+    case .failure(let error):
+      throw ValidationError.networkError(.init(stage: .GET, url: requestUrl, fetchError: error))
     }
   }
   
@@ -240,7 +248,10 @@ internal actor RequestFetcher {
     switch jwtResult {
     case .success(let string):
       return try extractJWT(string)
-    case .failure: throw ValidationError.invalidJwtPayload
+    case .failure(.invalidResponse):
+      throw ValidationError.invalidJwtPayload
+    case .failure(let error):
+      throw ValidationError.networkError(.init(stage: .POST, url: requestUrl, postError: error))
     }
   }
   
