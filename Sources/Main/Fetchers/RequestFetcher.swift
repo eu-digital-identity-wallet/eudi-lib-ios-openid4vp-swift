@@ -289,8 +289,8 @@ internal actor RequestFetcher {
   
   /// Returns the signed Request Object (a JWS), decrypting it first when the Verifier sent a JWE.
   ///
-  /// The decision is made on what the Verifier sent, not on the configuration: a compact JWE
-  /// has five segments, a compact JWS three. Under `.required` a JWS is rejected; under
+  /// The decision is made on what the Verifier sent, not on the configuration: JOSESwift parses
+  /// the value as a compact JWE. Under `.required` a JWS is rejected; under
   /// `.supported` it is accepted; under `.notRequired` nothing is decrypted. A JWE that cannot
   /// be decrypted is always an error, so a failure never falls through to the JWS parser.
   func decryptIfNeeded(
@@ -299,8 +299,10 @@ internal actor RequestFetcher {
     keys: (key: SecKey, jwk: ECPrivateKey)?,
     encryption: EncryptionRequirement
   ) throws -> String {
-    let isJwe = jwt.split(separator: ".", omittingEmptySubsequences: false).count == 5
-    guard isJwe else {
+    let encryptedJwe: JWE
+    do {
+      encryptedJwe = try JWE(compactSerialization: jwt)
+    } catch JOSESwiftError.invalidCompactSerializationComponentCount {
       if encryption.isRequired {
         throw AuthorizationError.jwtDecryptionFailed
       }
@@ -310,8 +312,6 @@ internal actor RequestFetcher {
       // The Verifier encrypted, but the Wallet offered no key: nothing can decrypt this.
       throw AuthorizationError.jwtDecryptionFailed
     }
-
-    let encryptedJwe = try JWE(compactSerialization: jwt)
 
     let supportedEncryptionAlgorithms: [KeyManagementAlgorithm] = config?.responseEncryptionConfiguration.supportedAlgorithms.compactMap { algorithm in
         return KeyManagementAlgorithm(algorithm: algorithm)
