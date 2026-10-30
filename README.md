@@ -287,8 +287,9 @@ as defined in 472-2 V1.2.1 and CIR 2026/1731 Annex II.
 To configure the library to expect a registration certificate a `RegistrationCertificatePolicy` must be provided in `OpenId4VPConfiguration`. If such
 a policy is provided, during the request object resolution step the library will:
 
-- Enforce that `verifier_info` is present and contains **exactly one** WRPRC entry (per CIR 2024/2082).
-- Extract the raw WRPRC value (a `String`, opaque to the library) and pass it to `validatePolicy` along with the WRPAC (`X509.Certificate` from the request's `x5c`) and the DCQL query.
+- Reject a `verifier_info` with more than one WRPRC entry (per CIR 2024/2082).
+- If `verifier_info` has no WRPRC entry, call `missingCertificate` instead of `validatePolicy`. The default `missingCertificate` rejects the request. Pass your own closure to accept such a request, with or without warnings.
+- Otherwise extract the raw WRPRC value (a `String`, opaque to the library) and pass it to `validatePolicy` along with the WRPAC (`X509.Certificate` from the request's `x5c`) and the DCQL query.
 - Act on the returned `Authorization`:
   - `.granted(warnings:)` — resolution succeeds; warnings are surfaced on the final `AuthorizationRequest.warnings`.
   - `.notGranted(error:)` — resolution fails with `ValidationError.authorizationPolicyNotMet(error)`, delivered as `AuthorizationRequest.invalidResolution`.
@@ -313,6 +314,10 @@ let registrationCertificatePolicy = RegistrationCertificatePolicy(
       // ...evaluate per credential; append warnings under `key`...
     }
     return .granted(warnings: warnings)
+  },
+  missingCertificate: {
+    // Optional. Called when verifier_info has no WRPRC. Omit it to reject the request.
+    .granted(warnings: ["global": [PolicyViolation("verifier_info has no WRPRC")]])
   }
 )
 
