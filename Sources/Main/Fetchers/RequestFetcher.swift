@@ -191,7 +191,7 @@ internal actor RequestFetcher {
       config: config,
       jwt: jwt,
       keys: keys,
-      encryptionRequired: !isNotRequired
+      encryption: options.jarEncryption
     )
     
     let expectedWalletAudience: String? = walletMetadata != nil
@@ -287,78 +287,79 @@ internal actor RequestFetcher {
     )
   }
   
-  private func decryptIfNeeded(
+  /// Returns the signed Request Object (a JWS), decrypting it first when the Verifier sent a JWE.
+  ///
+  /// The decision is made on what the Verifier sent, not on the configuration: JOSESwift parses
+  /// the value as a compact JWE. Under `.required` a JWS is rejected; under
+  /// `.supported` it is accepted; under `.notRequired` nothing is decrypted. A JWE that cannot
+  /// be decrypted is always an error, so a failure never falls through to the JWS parser.
+  func decryptIfNeeded(
     config: OpenId4VPConfiguration?,
     jwt: String,
     keys: (key: SecKey, jwk: ECPrivateKey)?,
-    encryptionRequired: Bool
+    encryption: EncryptionRequirement
   ) throws -> String {
-    guard let jwk = keys?.jwk else {
-      // If encryption is required but we have no keys, fail closed
-      if encryptionRequired {
-        throw AuthorizationError.jwtDecryptionFailed
-      }
-      return jwt
-    }
-
+    let encryptedJwe: JWE
     do {
-      let encryptedJwe = try JWE(compactSerialization: jwt)
-
-      let supportedEncryptionAlgorithms: [KeyManagementAlgorithm] = config?.responseEncryptionConfiguration.supportedAlgorithms.compactMap { algorithm in
-          return KeyManagementAlgorithm(algorithm: algorithm)
-      } ?? []
-
-      guard let headerKeyManagementAlgorithm = encryptedJwe.header.keyManagementAlgorithm else {
-        throw ValidationError.validationError(
-          "JWE header does not contain key management algorithm"
-        )
-      }
-
-      if !supportedEncryptionAlgorithms.contains(headerKeyManagementAlgorithm) {
-        throw ValidationError.validationError(
-          "JWEObject must contain a supported encryption algorithm"
-        )
-      }
-
-      let supportedEncryptionMethods: [ContentEncryptionAlgorithm] = config?.responseEncryptionConfiguration.supportedMethods.compactMap { method in
-        return ContentEncryptionAlgorithm(encryptionMethod: method)
-      } ?? []
-
-      guard let headerContentEncryptionAlgorithm = encryptedJwe.header.contentEncryptionAlgorithm else {
-        throw ValidationError.validationError(
-          "JWE header does not contain content encryption algorithm"
-        )
-      }
-
-      if !supportedEncryptionMethods.contains(headerContentEncryptionAlgorithm) {
-        throw ValidationError.validationError(
-          "JWEObject must contain a supported encryption method"
-        )
-      }
-
-      guard let decrypter = Decrypter(
-        keyManagementAlgorithm: headerKeyManagementAlgorithm,
-        contentEncryptionAlgorithm: headerContentEncryptionAlgorithm,
-        decryptionKey: jwk
-      ) else {
+      encryptedJwe = try JWE(compactSerialization: jwt)
+    } catch JOSESwiftError.invalidCompactSerializationComponentCount {
+      if encryption.isRequired {
         throw AuthorizationError.jwtDecryptionFailed
-      }
-
-      let payloadData = try encryptedJwe.decrypt(using: decrypter).data()
-      guard
-        let decoded = payloadData.base64EncodedString().base64Decoded(),
-        let jwtString = String(data: decoded, encoding: .utf8) else {
-        throw AuthorizationError.jwtDecryptionFailed
-      }
-      return jwtString
-
-    } catch {
-      // Fail closed when encryption is required
-      if encryptionRequired {
-        throw error
       }
       return jwt
     }
+    guard let jwk = keys?.jwk else {
+      // The Verifier encrypted, but the Wallet offered no key: nothing can decrypt this.
+      throw AuthorizationError.jwtDecryptionFailed
+    }
+
+    let supportedEncryptionAlgorithms: [KeyManagementAlgorithm] = config?.responseEncryptionConfiguration.supportedAlgorithms.compactMap { algorithm in
+        return KeyManagementAlgorithm(algorithm: algorithm)
+    } ?? []
+
+    guard let headerKeyManagementAlgorithm = encryptedJwe.header.keyManagementAlgorithm else {
+      throw ValidationError.validationError(
+        "JWE header does not contain key management algorithm"
+      )
+    }
+
+    if !supportedEncryptionAlgorithms.contains(headerKeyManagementAlgorithm) {
+      throw ValidationError.validationError(
+        "JWEObject must contain a supported encryption algorithm"
+      )
+    }
+
+    let supportedEncryptionMethods: [ContentEncryptionAlgorithm] = config?.responseEncryptionConfiguration.supportedMethods.compactMap { method in
+      return ContentEncryptionAlgorithm(encryptionMethod: method)
+    } ?? []
+
+    guard let headerContentEncryptionAlgorithm = encryptedJwe.header.contentEncryptionAlgorithm else {
+      throw ValidationError.validationError(
+        "JWE header does not contain content encryption algorithm"
+      )
+    }
+
+    if !supportedEncryptionMethods.contains(headerContentEncryptionAlgorithm) {
+      throw ValidationError.validationError(
+        "JWEObject must contain a supported encryption method"
+      )
+    }
+
+    guard let decrypter = Decrypter(
+      keyManagementAlgorithm: headerKeyManagementAlgorithm,
+      contentEncryptionAlgorithm: headerContentEncryptionAlgorithm,
+      decryptionKey: jwk
+    ) else {
+      throw AuthorizationError.jwtDecryptionFailed
+    }
+
+    let payloadData = try encryptedJwe.decrypt(using: decrypter).data()
+    guard
+      let decoded = payloadData.base64EncodedString().base64Decoded(),
+      let jwtString = String(data: decoded, encoding: .utf8) else {
+      throw AuthorizationError.jwtDecryptionFailed
+    }
+    return jwtString
   }
   
   /// Extracts the JWT token from a given JSON string or JWT string.

@@ -212,6 +212,11 @@ In this case there are two methods to get the request, controlled by the `reques
  
 In the later case wallet can communicate its [metadata](Sources/WalletEntities/WalletMetaData.swift) to the verifier. Library supports both methods.
 
+With HTTP POST the verifier may encrypt the Request Object with the key the wallet advertises in its metadata. `PostOptions.jarEncryption` sets what the wallet expects:
+- `.notRequired`: the wallet advertises no key and accepts a signed Request Object (`JARConfiguration.noEncryptionOption`).
+- `.supported`: the wallet advertises a key, decrypts an encrypted Request Object and also accepts a signed one (`JARConfiguration.encryptionSupportedOption`).
+- `.required`: the wallet advertises a key and rejects a Request Object that is not encrypted (`JARConfiguration.encryptionOption`).
+
 ## Authorization Request encoding
 
 OAUTH2 foresees that `AuthorizationRequest` is encoded as an HTTP GET
