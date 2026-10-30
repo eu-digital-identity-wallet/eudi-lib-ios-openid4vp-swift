@@ -61,10 +61,38 @@ public enum EncryptionRequirement: Equatable, Sendable {
     encryptionRequirementSpecification: EncryptionRequirementSpecification
   )
 
+  /**
+    * Encryption is supported but not required.
+    *
+    * The Wallet generates an ephemeral key and advertises it in its metadata, exactly as
+    * for `required`. A Verifier that encrypts the Request Object gets it decrypted; a
+    * Verifier that only signs it is accepted as well. This is the OpenID4VP 1.0 position:
+    * encrypting the Request Object is the Verifier's choice.
+    */
+  case supported(
+    encryptionRequirementSpecification: EncryptionRequirementSpecification
+  )
+
   public var isNotRequired: Bool {
     return switch self {
     case .notRequired: true
-    case .required: false
+    case .required, .supported: false
+    }
+  }
+
+  /// Whether an unencrypted (signed-only) Request Object must be rejected.
+  public var isRequired: Bool {
+    return switch self {
+    case .required: true
+    case .notRequired, .supported: false
+    }
+  }
+
+  /// The specification the Wallet advertises, when it offers encryption at all.
+  public var specification: EncryptionRequirementSpecification? {
+    return switch self {
+    case .notRequired: nil
+    case .required(let spec), .supported(let spec): spec
     }
   }
 }
