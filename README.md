@@ -237,6 +237,25 @@ According to OpenId4VP, verifier may pass the `dcql_query` either
 * [using scope](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.6)
 
 
+Claims Query `values` preserve their JSON types using `DCQLClaimValue`: `.string`,
+`.integer` (signed 64-bit), and `.boolean`. Boolean `true` does not equal string
+`"true"`, and integer `18` does not equal string `"18"`. Encoders retain these types.
+Wallet implementations should preserve credential value types when matching.
+
+```swift
+let claim = try ClaimsQuery.mdoc(
+  values: [.boolean(true)],
+  namespace: "eu.europa.ec.av.1",
+  claimName: "age_over_18"
+)
+```
+
+String array literals still work. Existing `[String]` variables need an explicit
+conversion, for example `values: strings.map(DCQLClaimValue.string)`. Consumers
+that compare `ClaimsQuery.values` should handle all three cases rather than
+convert them to display strings. Nulls, objects, arrays, fractions, and integers
+outside the signed 64-bit range are rejected as expected claim values.
+
 ## Client metadata in Authorization Request
 According to [OpenId4VP](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#name-authorization-request) verifier may pass his metadata (client metadata) either
 * by value
