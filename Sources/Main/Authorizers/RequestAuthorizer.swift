@@ -60,7 +60,8 @@ public actor RequestAuthorizer {
   ///
   /// - Parameter resolvedRequest: The resolved request data to authorize
   /// - Returns: `AuthorizationResult` carrying any warnings from a `.granted` outcome.
-  /// - Throws: `ValidationError.authorizationPolicyNotMet` if the policy returned `.notGranted`.
+  /// - Throws: `ValidationError.authorizationPolicyNotMet` if the policy returns `.notGranted`,
+  ///   or if the request has no WRPRC and `policy.missingCertificate` rejects it.
   public func authorize(resolvedRequest: ResolvedRequestData) async throws -> AuthorizationResult {
     // If no policy is configured, skip authorization
     guard let policy = policy else {
@@ -68,9 +69,12 @@ public actor RequestAuthorizer {
     }
 
     guard let wrprc = resolvedRequest.registrationCertificate else {
-      throw ValidationError.validationError(
-        "WRPRC policy is configured but no validated WRPRC is available"
-      )
+      switch await policy.missingCertificate() {
+      case .granted(let warnings):
+        return AuthorizationResult(warnings: warnings, registrationCertificate: nil)
+      case .notGranted(let error):
+        throw ValidationError.authorizationPolicyNotMet(error)
+      }
     }
 
     guard let wrpac = extractWRPAC(from: resolvedRequest.client) else {

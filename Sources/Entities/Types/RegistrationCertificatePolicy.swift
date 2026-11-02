@@ -32,13 +32,22 @@ public struct RegistrationCertificatePolicy: @unchecked Sendable {
     _ dcql: DCQL
   ) async -> Authorization
 
+  /// The outcome for a request that has no WRPRC in `verifier_info`.
+  /// Return `.granted(warnings:)` to accept the request. Return `.notGranted(error:)`
+  /// to reject it. The default rejects the request.
+  public let missingCertificate: @Sendable () async -> Authorization
+
   public init(
     validatePolicy: @escaping @Sendable (
       _ wrpac: Certificate,
       _ wrprc: String,
       _ dcql: DCQL
-    ) async -> Authorization
+    ) async -> Authorization,
+    missingCertificate: @escaping @Sendable () async -> Authorization = {
+      .notGranted(error: PolicyViolation("WRPRC policy is configured but no WRPRC found in verifier_info"))
+    }
   ) {
     self.validatePolicy = validatePolicy
+    self.missingCertificate = missingCertificate
   }
 }
