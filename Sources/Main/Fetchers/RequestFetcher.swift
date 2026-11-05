@@ -209,6 +209,18 @@ internal actor RequestFetcher {
     return (finalJwt, nonce)
   }
   
+  /// The request to the Request URI with the POST method. OpenID4VP 1.0 section 5.10.
+  static func requestUriPostRequest(url: URL, form: [String: Any]) throws -> URLRequest {
+    var request = URLRequest(url: url)
+    request.httpMethod = RequestUriMethod.POST.description
+    try request.setFormURLEncodedBody(form)
+    request.allHTTPHeaderFields = [
+      "Content-Type": ContentType.form.rawValue,
+      "Accept": "application/\(OpenId4VPSpec.AUTHORIZATION_REQUEST_OBJECT_TYPE)"
+    ]
+    return request
+  }
+
   fileprivate func postJwtString(
     poster: any Posting,
     walletMetaData: JSON?,
@@ -233,16 +245,8 @@ internal actor RequestFetcher {
       combined[Constants.WALLET_NONCE_FORM_PARAM] = nonce
     }
     
-    var request = URLRequest(url: requestUrl)
-    request.httpMethod = RequestUriMethod.POST.description
-    try request.setFormURLEncodedBody(combined)
-    
-    request.allHTTPHeaderFields = [
-      "Content-Type": ContentType.form.rawValue
-    ]
-    
     let jwtResult: Result<String, PostError> = await poster.postString(
-      request: request
+      request: try Self.requestUriPostRequest(url: requestUrl, form: combined)
     )
     
     switch jwtResult {
