@@ -143,6 +143,40 @@ final class JarJwtSignatureValidatorTests: XCTestCase {
 
     XCTAssert(true)
   }
+
+  func testJarJwtSignature_WhenTypIsNotRequestObjectType_ThenReturnFailure() async throws {
+
+    self.validator = try? XCTUnwrap(AccessValidator(
+      walletOpenId4VPConfig: iso509WalletConfiguration(trustsX509Hash: true)
+    ))
+
+    let walletConfig = await validator.walletOpenId4VPConfig!
+    let algorithm = SignatureAlgorithm(rawValue: walletConfig.publicWebKeySet.keys.first!.alg!)!
+    let clientId = "x509_hash:Uvo3HtuIxuhC92rShpgqcT3YXwrqRxWEviRiA0OZszk"
+
+    for header in [["alg": algorithm.rawValue, "typ": "JWT"], ["alg": algorithm.rawValue]] {
+      let jws = try JWS(
+        header: .init(parameters: header),
+        payload: try Payload([
+          "client_id": clientId
+        ].toThrowingJSONData()),
+        signer: Signer(
+          signatureAlgorithm: algorithm,
+          key: walletConfig.privateKey
+        )!
+      )
+
+      do {
+        try await validator.validate(
+          clientId: clientId,
+          jwt: jws.compactSerializedString
+        )
+        XCTFail("A request object without typ oauth-authz-req+jwt must be rejected")
+      } catch {
+        XCTAssertEqual(error as? ValidationError, .validationError("Header object type mismatch"))
+      }
+    }
+  }
 }
 
 private extension JarJwtSignatureValidatorTests {
@@ -184,7 +218,7 @@ private extension JarJwtSignatureValidatorTests {
     )
   }
 
-  func iso509WalletConfiguration() throws -> OpenId4VPConfiguration {
+  func iso509WalletConfiguration(trustsX509Hash: Bool = false) throws -> OpenId4VPConfiguration {
 
     let privateKey = try KeyController.generateRSAPrivateKey()
     let publicKey = try KeyController.generateRSAPublicKey(from: privateKey)
@@ -205,7 +239,7 @@ private extension JarJwtSignatureValidatorTests {
     return OpenId4VPConfiguration(
       privateKey: privateKey,
       publicWebKeySet: keySet,
-      supportedClientIdSchemes: [
+      supportedClientIdSchemes: trustsX509Hash ? [.x509Hash(trust: { _ in true })] : [
         .preregistered(clients: [
           "Verifier": .init(
             clientId: "Verifier",
