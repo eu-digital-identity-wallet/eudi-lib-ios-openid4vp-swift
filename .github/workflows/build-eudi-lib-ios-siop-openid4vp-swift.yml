@@ -1,5 +1,5 @@
 ---
-name: eudi-lib-ios-siop-openid4vp-swift
+name: build-package
 on:
   pull_request:
     types: [opened, reopened]
@@ -8,15 +8,13 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-
     env:
       IOS_SIMULATOR_DEVICE: iPhone 17
       IOS_SIMULATOR_OS: latest
-
     steps:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.5'
+          xcode-version: latest
       - uses: actions/checkout@v4
       - run:
           fastlane tests
