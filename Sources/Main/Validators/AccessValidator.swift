@@ -44,6 +44,13 @@ public actor AccessValidator: AccessValidating {
 
   private func doValidate(clientId: String?, jws: JWS) async throws {
 
+    // OpenID4VP 1.0 section 5: the wallet does not process a request object without this typ.
+    guard jws.header.typ == objectType.rawValue else {
+      throw ValidationError.validationError(
+        "Header object type mismatch"
+      )
+    }
+
     guard let clientId = clientId else {
       throw ValidationError.missingRequiredField("client_id")
     }
@@ -225,12 +232,6 @@ public actor AccessValidator: AccessValidating {
       )
     }
     
-    if jws.header.typ != objectType.rawValue {
-      throw ValidationError.validationError(
-        "Header object type mismatch"
-      )
-    }
-
     let resolver = WebKeyResolver()
     let jwk = await resolver.resolve(
       fetcher: fetcher,
