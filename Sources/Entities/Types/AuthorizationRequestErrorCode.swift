@@ -176,7 +176,8 @@ extension AuthorizationRequestErrorCode {
            .missingNonce,
            .invalidJarmRequirement,
            .invalidResponseEncryptionSpecification,
-           .authorizationPolicyNotMet:
+           .authorizationPolicyNotMet,
+           .insecureUrlScheme:
         return .invalidRequest
       }
     }
