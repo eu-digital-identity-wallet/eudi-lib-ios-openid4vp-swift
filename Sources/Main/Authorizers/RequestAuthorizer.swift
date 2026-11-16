@@ -38,13 +38,13 @@ public struct AuthorizationResult: Sendable {
 /// Per ETSI TS 119 475 V1.2.1, the WRPRC conveys the WRP's declared use cases
 /// and data access policies within the EUDIW ecosystem.
 ///
-/// This component performs **policy validation only**. The structural validation,
-/// certificate trust verification, and signature verification are performed earlier
-/// during request authentication (in `RequestAuthenticator`).
+/// This component performs **policy validation only**. The WRPRC is passed as an
+/// opaque string to the policy. The policy is responsible for all WRPRC validation
+/// including JWT signature verification, certificate chain trust, and claim validation.
 ///
 /// Authorization is only performed if:
 /// 1. A `RegistrationCertificatePolicy` is configured, AND
-/// 2. A pre-validated WRPRC (raw `String`) is available in the resolved request
+/// 2. A WRPRC (raw `String`, not yet validated) is available in the resolved request
 ///
 /// If no policy is configured, authorization is skipped and an empty result is returned.
 public actor RequestAuthorizer {
