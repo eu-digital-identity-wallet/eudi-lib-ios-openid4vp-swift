@@ -103,7 +103,7 @@ public enum Client: Sendable {
 
 public extension Certificate {
   var legaName: String {
-    let a = GeneralName.directoryName(issuer)
+    let a = GeneralName.directoryName(subject)
     switch a {
     case .directoryName(let name):
       guard let organizationName = name.lazy.filter({ name in

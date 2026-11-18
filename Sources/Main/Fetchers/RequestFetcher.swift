@@ -34,11 +34,21 @@ internal actor RequestFetcher {
   }
   
   func fetchRequest(request: UnvalidatedRequest) async throws -> FetchedRequest {
-    
+
     switch request {
     case .plain(let object):
       return .plain(requestObject: object)
     case .jwtSecuredPassByValue(let clientId, let jwt):
+      // Validate algorithm and audience for pass-by-value JARs
+      // (same checks as pass-by-reference in getJwtViaGET/getJwtViaPOST)
+      let expectedWalletAudience: String? = OpenId4VPConfiguration.SelfIssued?.absoluteString
+      try config.ensureJWTValid(
+        expectedClient: clientId,
+        nonceOption: .doNotUse,
+        expectedWalletNonce: nil,
+        expectedWalletAudience: expectedWalletAudience,
+        jwt: jwt
+      )
       return .jwtSecured(clientId: clientId, jwt: jwt)
     case .jwtSecuredPassByReference(let clientId, let jwtURI, let requestURIMethod):
       let jwt = try await fetchJwt(

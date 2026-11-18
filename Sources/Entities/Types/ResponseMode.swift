@@ -43,6 +43,7 @@ public enum ResponseMode: Sendable {
       }
       if let responseUri = authorizationRequestObject["response_uri"].string,
          let uri = URL(string: responseUri) {
+        try Self.validateHttpsScheme(uri, field: "response_uri")
         self = .directPost(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".responseUri")
@@ -53,6 +54,7 @@ public enum ResponseMode: Sendable {
       }
       if let responseUri = authorizationRequestObject["response_uri"].string,
          let uri = URL(string: responseUri) {
+        try Self.validateHttpsScheme(uri, field: "response_uri")
         self = .directPostJWT(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".responseUri")
@@ -63,6 +65,7 @@ public enum ResponseMode: Sendable {
       }
       if let redirectUri = authorizationRequestObject["redirect_uri"].string,
          let uri = URL(string: redirectUri) {
+        try Self.validateHttpsScheme(uri, field: "redirect_uri")
         self = .query(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".redirectUri")
@@ -73,6 +76,7 @@ public enum ResponseMode: Sendable {
       }
       if let redirectUri = authorizationRequestObject["redirect_uri"].string,
          let uri = URL(string: redirectUri) {
+        try Self.validateHttpsScheme(uri, field: "redirect_uri")
         self = .fragment(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".redirectUri")
@@ -102,6 +106,7 @@ public enum ResponseMode: Sendable {
       }
       if let responseUri = authorizationRequestData.responseUri,
          let uri = URL(string: responseUri) {
+        try Self.validateHttpsScheme(uri, field: "response_uri")
         self = .directPost(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".responseUri")
@@ -112,6 +117,7 @@ public enum ResponseMode: Sendable {
       }
       if let responseUri = authorizationRequestData.responseUri,
          let uri = URL(string: responseUri) {
+        try Self.validateHttpsScheme(uri, field: "response_uri")
         self = .directPostJWT(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".responseUri")
@@ -122,6 +128,7 @@ public enum ResponseMode: Sendable {
       }
       if let redirectUri = authorizationRequestData.redirectUri,
          let uri = URL(string: redirectUri) {
+        try Self.validateHttpsScheme(uri, field: "redirect_uri")
         self = .query(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".redirectUri")
@@ -132,12 +139,19 @@ public enum ResponseMode: Sendable {
       }
       if let redirectUri = authorizationRequestData.redirectUri,
          let uri = URL(string: redirectUri) {
+        try Self.validateHttpsScheme(uri, field: "redirect_uri")
         self = .fragment(responseURI: uri)
       } else {
         throw ValidationError.missingRequiredField(".redirectUri")
       }
     default:
       throw ValidationError.unsupportedResponseMode(responseMode)
+    }
+  }
+
+  private static func validateHttpsScheme(_ url: URL, field: String) throws {
+    guard url.scheme?.lowercased() == "https" else {
+      throw ValidationError.insecureUrlScheme(field: field, scheme: url.scheme ?? "none")
     }
   }
 }
@@ -176,13 +190,17 @@ internal extension UnvalidatedRequestObject {
     let hasRedirectUri = self.redirectUri != nil
 
     func responseUriURL() -> URL? {
-      guard let responseUri = self.responseUri else { return nil }
-      return URL(string: responseUri)
+      guard let responseUri = self.responseUri,
+            let url = URL(string: responseUri),
+            url.scheme?.lowercased() == "https" else { return nil }
+      return url
     }
 
     func redirectUriURL() -> URL? {
-      guard let redirectUri = self.redirectUri else { return nil }
-      return URL(string: redirectUri)
+      guard let redirectUri = self.redirectUri,
+            let url = URL(string: redirectUri),
+            url.scheme?.lowercased() == "https" else { return nil }
+      return url
     }
 
     switch self.responseMode {

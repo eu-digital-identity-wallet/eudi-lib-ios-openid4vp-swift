@@ -61,6 +61,12 @@ public enum UnvalidatedRequest: Sendable {
         guard let uri = URL(string: requestURI!) else {
           throw ValidationError.invalidUri
         }
+        guard uri.scheme?.lowercased() == "https" else {
+          throw ValidationError.insecureUrlScheme(
+            field: "request_uri",
+            scheme: uri.scheme ?? "none"
+          )
+        }
         return .jwtSecuredPassByReference(
           clientId: try helper.required("client_id"),
           jwtURI: uri,

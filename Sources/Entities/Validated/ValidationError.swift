@@ -49,6 +49,7 @@ indirect public enum ValidationError: AuthorizationRequestError, Equatable {
   case multipleQuerySources
   case invalidQuerySource
   case invalidUri
+  case insecureUrlScheme(field: String, scheme: String)
   case invalidRequestUriMethod
   case invalidUseOfBothRequestAndRequestUri
   case missingClientId
@@ -160,6 +161,8 @@ indirect public enum ValidationError: AuthorizationRequestError, Equatable {
       return ".invalidQuerySource"
     case .invalidUri:
       return ".invalidUri"
+    case .insecureUrlScheme(let field, let scheme):
+      return ".insecureUrlScheme: '\(field)' must use HTTPS scheme, got '\(scheme)'"
     case .invalidRequestUriMethod:
       return ".invalidRequestUriMethod"
     case .invalidUseOfBothRequestAndRequestUri:

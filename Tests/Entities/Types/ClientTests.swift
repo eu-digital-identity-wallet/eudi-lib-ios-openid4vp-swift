@@ -45,6 +45,28 @@ class ClientTests: XCTestCase {
     let client = Client.redirectUri(clientId: "client123")
     XCTAssertNil(client.legalName)
   }
+
+  func testCertificateLegalNameUsesSubjectNotIssuer() {
+    // The test certificate has:
+    // - Subject: CN only (no Organization)
+    // - Issuer: O=Let's Encrypt
+    // This test ensures we extract from subject (empty org) not issuer
+    let certificate = TestsConstants.testLeafCertificate
+
+    // Should return empty string since subject has no Organization,
+    // NOT "Let's Encrypt" which would be from the issuer
+    XCTAssertEqual(certificate.legaName, "")
+    XCTAssertNotEqual(certificate.legaName, "Let's Encrypt")
+  }
+
+  func testLegalNameX509SanDns() {
+    // When using x509SanDns client with a certificate that has no org in subject,
+    // legalName should be empty, not the issuer's org name
+    let certificate = TestsConstants.testLeafCertificate
+    let client = Client.x509SanDns(clientId: "test.example.com", certificate: certificate)
+
+    XCTAssertEqual(client.legalName, "")
+  }
 }
 
 final class ClientIdSchemeTests: XCTestCase {
